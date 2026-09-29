@@ -8,7 +8,8 @@ import { CatalogPage } from '../features/catalog/pages/CatalogPage'
 import { ProductPage } from '../features/catalog/pages/ProductPage'
 import { CartPage } from '../features/cart/CartPage'
 import { AuthPage } from '../features/auth/AuthPage'
-import { AdminDashboard, AdminProducts, AdminCategories } from '../features/admin/AdminPages'
+import { AdminDashboard } from '../features/admin/AdminPages'
+import { AdminEditor } from '../features/admin/AdminEditor'
 import { NotFoundPage } from '../shared/components/NotFoundPage'
 
 export function AppRoutes() {
@@ -28,8 +29,8 @@ export function AppRoutes() {
       <Route element={<RequireAdmin />}>
       <Route path="admin" element={<AdminLayout />}>
         <Route index element={<AdminDashboard />} />
-        <Route path="productos" element={<AdminProducts />} />
-        <Route path="categorias" element={<AdminCategories />} />
+        <Route path="productos" element={<AdminEditor key="products" kind="products" />} />
+        <Route path="categorias" element={<AdminEditor key="categories" kind="categories" />} />
         <Route path="*" element={<NotFoundPage />} />
       </Route>
       </Route>

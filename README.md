@@ -102,3 +102,7 @@ y checkout espera las decisiones comerciales restantes.
 Consulta [la guía de configuración y validación](docs/phase-3-firebase.md). Completa .env.local, habilita correo/contraseña y configura las reglas de Firestore; después cambia VITE_DATA_SOURCE a firebase y reinicia Vite. Los servicios reales quedan pendientes de probar con tu proyecto.
 
 Se incluyen registro, acceso, recuperación, sesión, guard ADMIN y catálogo de solo lectura. Las operaciones comerciales siguen deshabilitadas. .env.example es la plantilla versionada.
+
+## Fase 4: administración
+
+Formularios y backend de productos/categorías implementados y probados en emuladores. Consulta [alcance, validación y pasos de despliegue](docs/phase-4-admin.md). El proyecto real aún requiere publicación de reglas y funciones; no se ha asignado una cuenta ADMIN.
