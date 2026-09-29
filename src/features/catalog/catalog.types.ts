@@ -1,19 +1,11 @@
+import type { CategoryRecord, PublicProduct } from './catalog.models'
+
 export type ProductIllustration = 'headphones' | 'lamp' | 'bag'
 
-export interface Category {
-  id: string
-  slug: string
-  name: string
-  description: string
-}
+export type Category = Pick<CategoryRecord, 'id' | 'slug' | 'name' | 'description'>
 
-export interface CatalogProduct {
-  id: string
-  slug: string
-  name: string
-  categoryId: string
-  description: string
-  priceMinor: number
+/** Proyección de presentación exclusiva del catálogo de demostración. */
+export interface CatalogProduct extends Pick<PublicProduct, 'id' | 'slug' | 'name' | 'categoryId' | 'description' | 'priceMinor'> {
   illustration: ProductIllustration
   color: string
 }

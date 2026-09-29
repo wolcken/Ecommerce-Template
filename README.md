@@ -12,6 +12,7 @@ yarn dev
 ```sh
 yarn lint
 yarn typecheck
+yarn test
 yarn build
 yarn preview
 ```
@@ -46,7 +47,7 @@ Editar src/config/store.config.ts para cambiar nombre, monograma, descripción, 
 
 Los textos editoriales de la portada viven en HomePage.tsx. La configuración estática requiere volver a compilar para publicar sus cambios. src/styles/tokens.css define los valores visuales base.
 
-Los importes de muestra se expresan en unidades menores (centavos para BOB) y se presentan con Intl.NumberFormat. No se ha definido una fórmula tributaria. Costos, márgenes, credenciales y otros datos privados nunca deben ir en la configuración pública ni en variables VITE_*.
+Los importes de muestra se expresan en unidades menores (centavos para BOB) y se presentan con Intl.NumberFormat. Regla comercial acordada: costo + ganancia fija + 16 % sobre esa suma. La integración fiscal es independiente. Costos, márgenes, credenciales y otros datos privados nunca deben ir en la configuración pública ni en variables VITE_*.
 
 commerce reserva opciones de pedidos, reservas y entrega para las fases funcionales. Sus valores actuales no habilitan operaciones de compra.
 
@@ -66,12 +67,12 @@ Para desplegar esta SPA, configurar el alojamiento para servir index.html en las
 
 ## Próximas fases
 
-2. Definir entidades, autenticación, permisos, configuración Firebase y reglas de acceso antes de integrar servicios.
+2. Base de dominio y contratos completada; ver documentación de fase 2. Reservas y configuración concreta de Firebase pendientes.
 3. Implementar catálogo conectado, administración de productos/categorías e inventario.
 4. Carrito de visitante, identificación al confirmar, pedidos/reservas y datos de facturación.
 5. Validación de precios y stock, experiencia final y despliegue.
 
-Queda pendiente acordar la fórmula de precio final, el significado del porcentaje de facturación, la duración de reservas y sus transiciones. Un carrito no compromete existencias; pedidos y reservas requieren validación confiable de precios y disponibilidad.
+El precio comercial usa ganancia fija y recargo configurable (16 % inicial). Quedan pendientes duración de reservas, transiciones, entrega y configuración concreta de Firebase. Un carrito no compromete existencias; pedidos y reservas requieren validación confiable de precios y disponibilidad.
 
 ## Verificación manual
 
@@ -81,3 +82,17 @@ Queda pendiente acordar la fórmula de precio final, el significado del porcenta
 - Revisar carrito, acceso y registro: no deben simular compras ni sesiones.
 - Visitar las tres vistas de administración y volver a la tienda.
 - Revisar navegación por teclado y ancho móvil (390 px).
+
+## Fase 2: dominio y contratos
+
+- [Modelo de datos, precios y decisiones pendientes](docs/phase-2-domain.md).
+- [Persistencia, permisos y preparación Firebase](docs/phase-2-firebase.md).
+- Modelos independientes del SDK y contratos de servicios en src/app/services/contracts.ts.
+- Separación de catálogo público, costos, perfiles, inventario y pedidos.
+- Cálculo de precios en centavos con pruebas ejecutables: yarn test.
+- Ejemplo acordado: Bs 5.000 + Bs 200 + 16 % = Bs 6.032.
+- Firebase, autorización efectiva y operaciones comerciales todavía no están implementados.
+
+Siguiente bloque: confirmar proyecto/región/proveedor de acceso y conectar Authentication
+y catálogo mediante adaptadores, reglas y pruebas de emuladores. La activación de reservas
+y checkout espera las decisiones comerciales restantes.
