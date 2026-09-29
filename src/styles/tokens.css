@@ -1,0 +1,12 @@
+:root {
+  --accent: #245646;
+  --accent-hover: #173e32;
+  --font-body: "Segoe UI", system-ui, sans-serif;
+  --font-heading: Georgia, "Times New Roman", serif;
+  --canvas: #faf9f6;
+  --surface: #fff;
+  --ink: #23372e;
+  --muted: #65716a;
+  --line: #dce0d8;
+  --radius: 6px;
+}
