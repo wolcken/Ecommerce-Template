@@ -28,7 +28,7 @@ Conservar yarn.lock en el repositorio y usar Yarn para agregar dependencias.
 - Estilos adaptables a móvil, navegación por teclado y configuración de marca.
 - Productos ficticios; no hay almacenamiento, autenticación, checkout ni Firebase.
 
-**El panel administrativo no es privado todavía.** Solo muestra datos de ejemplo. No introducir información real ni habilitar operaciones de administración antes de implementar autorización en el servidor o reglas del proveedor de datos. Agregar al carrito tampoco reserva stock.
+**En modo demo, el panel solo muestra datos de ejemplo. En modo Firebase requiere sesión ADMIN.** No introducir información real ni habilitar operaciones de administración antes de implementar autorización en el servidor o reglas del proveedor de datos. Agregar al carrito tampoco reserva stock.
 
 ## Estructura
 
@@ -91,8 +91,14 @@ El precio comercial usa ganancia fija y recargo configurable (16 % inicial). Que
 - Separación de catálogo público, costos, perfiles, inventario y pedidos.
 - Cálculo de precios en centavos con pruebas ejecutables: yarn test.
 - Ejemplo acordado: Bs 5.000 + Bs 200 + 16 % = Bs 6.032.
-- Firebase, autorización efectiva y operaciones comerciales todavía no están implementados.
+- Estado al cerrar fase 2: integración Firebase pendiente. Ver fase 3 para el estado actual.
 
 Siguiente bloque: confirmar proyecto/región/proveedor de acceso y conectar Authentication
 y catálogo mediante adaptadores, reglas y pruebas de emuladores. La activación de reservas
 y checkout espera las decisiones comerciales restantes.
+
+## Fase 3: Firebase preparado
+
+Consulta [la guía de configuración y validación](docs/phase-3-firebase.md). Completa .env.local, habilita correo/contraseña y configura las reglas de Firestore; después cambia VITE_DATA_SOURCE a firebase y reinicia Vite. Los servicios reales quedan pendientes de probar con tu proyecto.
+
+Se incluyen registro, acceso, recuperación, sesión, guard ADMIN y catálogo de solo lectura. Las operaciones comerciales siguen deshabilitadas. .env.example es la plantilla versionada.

@@ -22,3 +22,9 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Environment values (template remains versioned)
+.env
+.env.*
+!.env.example
+.firebase/

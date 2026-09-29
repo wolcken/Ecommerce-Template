@@ -1,9 +1,10 @@
 import { NavLink, useParams } from 'react-router'
-import { categories, products } from '../data/demoCatalog'
+import { useCatalog } from '../catalog.context'
 import { ProductCard } from '../components/ProductCard'
 import { NotFoundPage } from '../../../shared/components/NotFoundPage'
 
 export function CatalogPage() {
+  const { categories, products } = useCatalog()
   const { slug } = useParams()
   const category = categories.find(item => item.slug === slug)
   if (slug && !category) return <NotFoundPage />
@@ -20,8 +21,8 @@ export function CatalogPage() {
         </nav>
         <span>{visibleProducts.length} {visibleProducts.length === 1 ? 'producto' : 'productos'}</span>
       </div>
-      <div className="product-grid">{visibleProducts.map(product => <ProductCard key={product.id} product={product} />)}</div>
-      <p className="demo-caption">Productos y precios de ejemplo. Las compras todavía no están habilitadas.</p>
+      <p role="status">{visibleProducts.length === 0 ? 'Todavía no hay productos publicados aquí.' : ''}</p><div className="product-grid">{visibleProducts.map(product => <ProductCard key={product.id} product={product} />)}</div>
+      <p className="demo-caption">Las compras y reservas todavía no están habilitadas.</p>
     </div>
   )
 }

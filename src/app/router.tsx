@@ -1,3 +1,5 @@
+import { RequireAdmin } from '../features/auth/RequireAdmin'
+import { CatalogBoundary } from '../features/catalog/CatalogBoundary'
 import { Route, Routes } from 'react-router'
 import { PublicLayout } from './layouts/PublicLayout'
 import { AdminLayout } from './layouts/AdminLayout'
@@ -13,20 +15,23 @@ export function AppRoutes() {
   return (
     <Routes>
       <Route element={<PublicLayout />}>
-        <Route index element={<HomePage />} />
-        <Route path="productos" element={<CatalogPage />} />
-        <Route path="productos/:slug" element={<ProductPage />} />
-        <Route path="categorias/:slug" element={<CatalogPage />} />
+        <Route index element={<CatalogBoundary><HomePage /></CatalogBoundary>} />
+        <Route path="productos" element={<CatalogBoundary><CatalogPage /></CatalogBoundary>} />
+        <Route path="productos/:slug" element={<CatalogBoundary><ProductPage /></CatalogBoundary>} />
+        <Route path="categorias/:slug" element={<CatalogBoundary><CatalogPage /></CatalogBoundary>} />
         <Route path="carrito" element={<CartPage />} />
-        <Route path="login" element={<AuthPage mode="login" />} />
-        <Route path="registro" element={<AuthPage mode="register" />} />
+        <Route path="login" element={<AuthPage key="login" mode="login" />} />
+        <Route path="recuperar-acceso" element={<AuthPage key="reset" mode="reset" />} />
+        <Route path="registro" element={<AuthPage key="register" mode="register" />} />
         <Route path="*" element={<NotFoundPage />} />
       </Route>
+      <Route element={<RequireAdmin />}>
       <Route path="admin" element={<AdminLayout />}>
         <Route index element={<AdminDashboard />} />
         <Route path="productos" element={<AdminProducts />} />
         <Route path="categorias" element={<AdminCategories />} />
         <Route path="*" element={<NotFoundPage />} />
+      </Route>
       </Route>
     </Routes>
   )

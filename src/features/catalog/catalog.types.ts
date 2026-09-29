@@ -6,6 +6,7 @@ export type Category = Pick<CategoryRecord, 'id' | 'slug' | 'name' | 'descriptio
 
 /** Proyección de presentación exclusiva del catálogo de demostración. */
 export interface CatalogProduct extends Pick<PublicProduct, 'id' | 'slug' | 'name' | 'categoryId' | 'description' | 'priceMinor'> {
-  illustration: ProductIllustration
-  color: string
+  illustration?: ProductIllustration
+  color?: string
+  images?: PublicProduct['images']
 }

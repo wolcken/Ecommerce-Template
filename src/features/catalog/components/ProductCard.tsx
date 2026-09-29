@@ -1,15 +1,16 @@
 import { Link } from 'react-router'
 import type { CatalogProduct } from '../catalog.types'
-import { categories } from '../data/demoCatalog'
+import { useCatalog } from '../catalog.context'
 import { formatMoney } from '../../../shared/utils/formatMoney'
-import { ProductArtwork } from './ProductArtwork'
+import { ProductMedia } from './ProductMedia'
 
 export function ProductCard({ product }: { product: CatalogProduct }) {
+  const { categories } = useCatalog()
   return (
     <article className="product-card">
       <Link to={`/productos/${product.slug}`} className="product-card-link">
         <div className="product-visual" style={{ backgroundColor: product.color }}>
-          <ProductArtwork kind={product.illustration} />
+          <ProductMedia product={product} />
           <span className="product-arrow" aria-hidden="true">↗</span>
         </div>
         <p className="product-category">{categories.find(c => c.id === product.categoryId)?.name}</p>

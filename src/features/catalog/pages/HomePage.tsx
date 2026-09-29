@@ -1,10 +1,11 @@
 import { Link } from 'react-router'
 import { storeConfig } from '../../../config/store.config'
-import { categories, products } from '../data/demoCatalog'
+import { useCatalog } from '../catalog.context'
 import { ProductCard } from '../components/ProductCard'
 import { ProductArtwork } from '../components/ProductArtwork'
 
 export function HomePage() {
+  const { categories, products } = useCatalog()
   return (
     <div className="container">
       <section className="hero">

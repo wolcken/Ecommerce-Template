@@ -1,3 +1,4 @@
+import { runtime } from '../services/runtime'
 import { NavLink, Outlet } from 'react-router'
 import { Brand } from '../../shared/components/Brand'
 import { storeConfig } from '../../config/store.config'
@@ -31,7 +32,7 @@ export function PublicLayout() {
             {config.contact.phone && <a href={`tel:${config.contact.phone}`}>{config.contact.phone}</a>}
           </nav>
         </div>
-        <div className="container footer-bottom"><span>© {new Date().getFullYear()} {config.name}</span><span>Catálogo de muestra</span></div>
+        <div className="container footer-bottom"><span>© {new Date().getFullYear()} {config.name}</span><span>{runtime.mode === 'demo' ? 'Catálogo de muestra' : 'Colección'}</span></div>
       </footer>
     </>
   )

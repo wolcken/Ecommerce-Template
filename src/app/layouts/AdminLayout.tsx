@@ -1,3 +1,5 @@
+import { runtime } from '../services/runtime'
+import { CatalogBoundary } from '../../features/catalog/CatalogBoundary'
 import { NavLink, Outlet } from 'react-router'
 import { Brand } from '../../shared/components/Brand'
 
@@ -16,9 +18,9 @@ export function AdminLayout() {
         <NavLink className="back-link" to="/">← Volver a la tienda</NavLink>
       </aside>
       <div className="admin-body">
-        <header className="admin-header"><span>Tu espacio de trabajo</span><span className="badge">Demostración</span></header>
-        <div className="notice">Vista de ejemplo sin autenticación. Solo contiene datos ficticios y no permite guardar cambios.</div>
-        <main id="contenido" tabIndex={-1} className="admin-content"><Outlet /></main>
+        <header className="admin-header"><span>Tu espacio de trabajo</span><span className="badge">{runtime.mode === 'demo' ? 'Demostración' : 'Administración'}</span></header>
+        <div className="notice">{runtime.mode === 'demo' ? 'Vista de ejemplo sin autenticación. Solo contiene datos ficticios.' : 'Catálogo publicado de solo lectura. La edición se habilitará en la siguiente fase.'}</div>
+        <main id="contenido" tabIndex={-1} className="admin-content"><CatalogBoundary><Outlet /></CatalogBoundary></main>
       </div>
     </div>
   )
