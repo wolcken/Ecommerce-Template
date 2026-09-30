@@ -1,7 +1,7 @@
 import { HttpsError } from 'firebase-functions/v2/https'
 import type { CategoryInput, ProductInput } from '../../src/features/admin/admin.models.js'
 
-function object(value: unknown, keys: string[]): Record<string, unknown> {
+export function object(value: unknown, keys: string[]): Record<string, unknown> {
   if (!value || typeof value !== 'object' || Array.isArray(value)) throw new HttpsError('invalid-argument', 'Datos inválidos.')
   const data = value as Record<string, unknown>
   if (Object.keys(data).some(key => !keys.includes(key))) throw new HttpsError('invalid-argument', 'Hay campos no permitidos.')
@@ -11,7 +11,7 @@ function text(value: unknown, name: string, max = 120, empty = false): string {
   if (typeof value !== 'string' || value.length > max || (!empty && !value.trim())) throw new HttpsError('invalid-argument', `Revisa ${name}.`)
   return value.trim()
 }
-function integer(value: unknown, name: string, max = 1_000_000_000): number {
+export function integer(value: unknown, name: string, max = 1_000_000_000): number {
   if (typeof value !== 'number' || !Number.isSafeInteger(value) || value < 0 || value > max) throw new HttpsError('invalid-argument', `Revisa ${name}.`)
   return value
 }

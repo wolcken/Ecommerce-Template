@@ -1,3 +1,4 @@
+import { previewCheckout as calculatePreview, previewInput } from './checkout.js'
 import { initializeApp } from 'firebase-admin/app'
 import { getFirestore, Timestamp } from 'firebase-admin/firestore'
 import { onCall, HttpsError, type CallableRequest } from 'firebase-functions/v2/https'
@@ -102,4 +103,9 @@ export const listAdminCatalog = onCall(options, async request => {
       costMinor:p.costMinor,profitMinor:p.profitMinor,billingRateBps:p.billingRateBps,onHand:s.onHand,committed:s.committed}
   }))
   return {items,nextCursor:snapshot.size === 100 ? snapshot.docs[snapshot.size-1].id:null}
+})
+
+export const previewCheckout = onCall(options, async request => {
+  if (!request.auth) throw new HttpsError('unauthenticated', 'Inicia sesión para cotizar.')
+  return calculatePreview(db, previewInput(request.data))
 })

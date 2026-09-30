@@ -13,7 +13,12 @@
     "test:integration": "yarn build:functions && node scripts/run-emulators.mjs",
     "build:functions": "yarn --cwd functions build",
     "emulators": "yarn build:functions && node scripts/run-emulators.mjs --start",
-    "dev:emulator": "node scripts/dev-emulator.mjs"
+    "dev:emulator": "node scripts/dev-emulator.mjs",
+    "firebase:check": "node scripts/check-firebase.mjs",
+    "seed:emulator": "node functions/scripts/seed-emulator.mjs",
+    "firebase:admin": "node --use-system-ca scripts/admin-role.mjs",
+    "firebase:smoke": "node --use-system-ca scripts/check-live-rules.mjs",
+    "firebase:deploy": "node --use-system-ca node_modules/firebase-tools/lib/bin/firebase.js deploy"
   },
   "dependencies": {
     "firebase": "^12.19.0",

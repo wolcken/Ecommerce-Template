@@ -14,8 +14,8 @@ if (!process.env.FIRESTORE_EMULATOR_HOST || !process.env.FIREBASE_AUTH_EMULATOR_
 const app=adminApp({projectId})
 const auth=adminAuth(app), db=adminFirestore(app)
 let rules, adminToken, userToken
-const password='Test-only-Password42'
-async function account(email,isAdmin) {
+
+async function account(email,isAdmin,password='Test-only-Password42') {
   let user
   try { user=await auth.getUserByEmail(email) } catch { user=await auth.createUser({email,password}) }
   await auth.setCustomUserClaims(user.uid,isAdmin?{admin:true}:{})
@@ -40,7 +40,7 @@ const product={id:'test-laptop',expectedVersion:0,name:'Laptop',slug:'test-lapto
 before(async()=>{
  rules=await initializeTestEnvironment({projectId,firestore:{host:'127.0.0.1',port:8080,rules:await readFile('firestore.rules','utf8')}})
  await rules.clearFirestore()
- adminToken=await account('admin@example.test',true)
+ adminToken=await account('admin@ecommerce.com',true,'123456')
  userToken=await account('user@example.test',false)
 })
 after(async()=>{await rules.cleanup();await deleteAdmin(app)})
@@ -102,4 +102,51 @@ test('deactivated products disappear from public access and remain in admin list
  assert.equal(result.result.items[0].costMinor,500000)
  // Dejar un producto visible para la revisión local de interfaz.
  assert.ok((await callable('saveProduct',{...product,expectedVersion:3},adminToken)).result)
+})
+
+test('checkout requires authentication and rejects supplied prices, duplicates and invalid quantities',async()=>{
+ const input={items:[{productId:product.id,quantity:1}],kind:'ORDER',deliveryMethod:'PICKUP'}
+ assert.equal((await callable('previewCheckout',input)).error.status,'UNAUTHENTICATED')
+ for(const invalid of [
+  {...input,totalMinor:1}, {...input,deliveryMethod:'FREE'}, {...input,kind:'OTHER'},
+  {...input,items:[]}, {...input,items:[...input.items,...input.items]},
+  {...input,items:[{productId:product.id,quantity:0}]},
+  {...input,items:[{productId:product.id,quantity:100}]},
+  {...input,items:[{productId:product.id,quantity:1,priceMinor:1}]},
+ ]) assert.equal((await callable('previewCheckout',invalid,userToken)).error.status,'INVALID_ARGUMENT')
+})
+
+test('checkout calculates private prices, simulated delivery and 24 hour policy without writing',async()=>{
+ const before=(await db.doc('inventory/'+product.id).get()).data()
+ // Alterar solo el precio público prueba que la función no confía en él.
+ await db.doc('products/'+product.id).update({priceMinor:1})
+ try {
+  for(const deliveryMethod of ['PICKUP','SHIPPING']) {
+   const result=await callable('previewCheckout',{items:[{productId:product.id,quantity:2}],kind:'RESERVATION',deliveryMethod},userToken)
+   assert.ok(result.result,JSON.stringify(result))
+   assert.equal(result.result.items[0].unitPriceMinor,603200)
+   assert.equal(result.result.totalMinor,1206400)
+   assert.equal(result.result.shippingMinor,0)
+   assert.equal(result.result.reservationHours,24)
+   assert.equal(result.result.simulatedDelivery,true)
+   assert.ok(!JSON.stringify(result.result).includes('costMinor'))
+  }
+  assert.deepEqual((await db.doc('inventory/'+product.id).get()).data(),before)
+  assert.equal((await db.collection('orders').get()).size,0)
+  assert.equal((await db.collection('checkoutQuotes').get()).size,0)
+ } finally {await db.doc('products/'+product.id).update({priceMinor:603200})}
+})
+
+test('checkout rejects insufficient committed stock, retired products and categories',async()=>{
+ const input={items:[{productId:product.id,quantity:8}],kind:'ORDER',deliveryMethod:'PICKUP'}
+ assert.equal((await callable('previewCheckout',input,userToken)).error.status,'FAILED_PRECONDITION')
+ input.items[0].quantity=1
+ await db.doc('products/'+product.id).update({active:false})
+ assert.equal((await callable('previewCheckout',input,userToken)).error.status,'FAILED_PRECONDITION')
+ await db.doc('products/'+product.id).update({active:true})
+ await db.doc('categories/'+category.id).update({active:false})
+ assert.equal((await callable('previewCheckout',input,userToken)).error.status,'FAILED_PRECONDITION')
+ await db.doc('categories/'+category.id).update({active:true})
+ input.items[0].productId='missing-product'
+ assert.equal((await callable('previewCheckout',input,userToken)).error.status,'FAILED_PRECONDITION')
 })

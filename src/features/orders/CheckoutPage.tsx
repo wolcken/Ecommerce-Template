@@ -1,3 +1,4 @@
+import { CheckoutEstimate } from './CheckoutEstimate'
 import { useState, type FormEvent } from 'react'
 import { Link } from 'react-router'
 import { useCart } from '../cart/cart.context'
@@ -49,11 +50,11 @@ export function CheckoutPage() {
         <p className="demo-caption">Estos datos no se guardan al salir ni se envían a la tienda en esta fase.</p>
       </form>
       <aside className="cart-summary">
-        <h2>Resumen del borrador</h2>
+        <h2>Resumen del borrador</h2><CheckoutEstimate />
         {cart.items.map(item=><p key={item.productId}>{products.find(p=>p.id===item.productId)?.name} × {item.quantity}</p>)}
-        <div className="summary-total"><span>Subtotal estimado</span><strong>{formatMoney(summary.subtotalMinor)}</strong></div>
+        <div className="summary-total"><span>Referencia del carrito</span><strong>{formatMoney(summary.subtotalMinor)}</strong></div>
         {details&&<div className="billing-review"><h3>Facturar a</h3><p>{details.billing.name}</p><p>{details.billing.documentType}: {details.billing.documentNumber}{details.billing.documentComplement?' — '+details.billing.documentComplement:''}</p></div>}
-        <p>Entrega y total final pendientes de cotización.</p>
+        <p>El total final se volverá a validar al confirmar.</p>
         <button className="button" disabled>Confirmación próximamente</button>
         {state.status!=='AUTHENTICATED'&&<p>Necesitarás una cuenta para confirmar cuando las compras estén habilitadas. <Link className="text-link" to="/login">Mi cuenta</Link></p>}
         <Link className="text-link" to="/carrito">Volver al carrito</Link>

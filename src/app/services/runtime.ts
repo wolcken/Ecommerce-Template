@@ -1,3 +1,5 @@
+import { createCheckoutPreviewService } from '../../infrastructure/firebase/checkout'
+import type { CheckoutPreviewService } from '../../features/orders/preview.models'
 import { getFunctions, connectFunctionsEmulator } from 'firebase/functions'
 import { createAdminService } from '../../infrastructure/firebase/admin'
 import type { CatalogAdminService } from '../../features/admin/admin.models'
@@ -12,7 +14,7 @@ import type { AuthService, CatalogService } from './contracts'
 type Runtime =
   | { mode: 'demo' }
   | { mode: 'invalid'; message: string }
-  | { mode: 'firebase'; auth: AuthService; catalog: CatalogService; admin: CatalogAdminService }
+  | { mode: 'firebase'; auth: AuthService; catalog: CatalogService; admin: CatalogAdminService; checkout: CheckoutPreviewService }
 
 function createRuntime(): Runtime {
   const environment = readEnvironment(import.meta.env)
@@ -31,7 +33,7 @@ function createRuntime(): Runtime {
       connectFirestoreEmulator(db, '127.0.0.1', 8080)
       connectFunctionsEmulator(functions, '127.0.0.1', 5001)
     }
-    return { mode: 'firebase', auth: createAuthService(auth), admin: createAdminService(functions), catalog: createCatalogService(db) }
+    return { mode: 'firebase', checkout: createCheckoutPreviewService(functions), auth: createAuthService(auth), admin: createAdminService(functions), catalog: createCatalogService(db) }
   } catch {
     return { mode: 'invalid', message: 'No se pudo iniciar Firebase. Revisa la configuración web de .env.local y reinicia Vite.' }
   }

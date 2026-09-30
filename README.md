@@ -111,3 +111,7 @@ Formularios y backend de productos/categorías implementados y probados en emula
 ## Fase 5: carrito y borrador
 
 Carrito persistente por navegador y cuenta, cantidades y subtotal; /checkout permite revisar datos del comprador y facturación sin enviarlos. Confirmación y reservas pendientes. Consulta [alcance y validación](docs/phase-5-cart.md). Las secciones iniciales describen el avance histórico de cada fase.
+
+## Fase 6: cotización y preparación de publicación
+
+Cotización autenticada con precio calculado en servidor, disponibilidad, entrega simulada y política de reservas de 24 horas. Cuenta y catálogo locales: yarn seed:emulator. Comprobación previa: yarn firebase:check. Consulta [alcance, pruebas y pasos pendientes](docs/phase-6-readiness.md). Reglas e índices publicados; rol ADMIN real asignado. Functions requiere el plan Blaze. Confirmación y vencimiento automático todavía pendientes.
