@@ -1,14 +1,115 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Fase 3: solo lectura del catálogo publicado. Sin escrituras web.
+    function isAdmin() {
+      return request.auth != null && request.auth.token.admin == true;
+    }
+    function categoryShape(data) {
+      return data.keys().hasAll(['name','slug','description','active','parentId','position','version','createdAt','updatedAt'])
+        && data.keys().hasOnly(['name','slug','description','active','parentId','position','version','createdAt','updatedAt','catalogUpdatedAt'])
+        && data.name is string && data.name.size() > 0 && data.name.size() <= 120
+        && data.slug is string && data.slug.matches('^[a-z0-9]+(-[a-z0-9]+)*$')
+        && data.description is string && data.description.size() <= 2000
+        && data.active is bool && (data.parentId == null || data.parentId is string)
+        && data.position is int && data.version is int && data.version > 0
+        && data.createdAt is timestamp && data.updatedAt is timestamp
+        && (!('catalogUpdatedAt' in data) || data.catalogUpdatedAt is timestamp);
+    }
+    function imageShape(image) {
+      return image.keys().hasAll(['url','alt','position']) && image.keys().hasOnly(['url','alt','position'])
+        && image.url is string && image.url.matches('^https://.+')
+        && image.alt is string && image.alt.size() <= 120 && image.position is int;
+    }
+    function productShape(data) {
+      return data.keys().hasAll(['name','slug','sku','description','categoryId','images','priceMinor','currency','priceVersion',
+        'availability','active','featured','version','createdAt','updatedAt'])
+        && data.keys().hasOnly(['name','slug','sku','description','categoryId','images','priceMinor','currency','priceVersion',
+        'availability','active','featured','version','createdAt','updatedAt'])
+        && data.name is string && data.name.size() > 0 && data.name.size() <= 120
+        && data.slug is string && data.slug.matches('^[a-z0-9]+(-[a-z0-9]+)*$')
+        && data.sku is string && data.sku.matches('^[A-Za-z0-9][A-Za-z0-9_-]*$')
+        && data.description is string && data.description.size() <= 5000
+        && data.categoryId is string && data.categoryId.size() > 0
+        && data.images is list && data.images.size() <= 1 && (data.images.size() == 0 || imageShape(data.images[0]))
+        && data.priceMinor is int && data.priceMinor >= 0 && data.currency == 'BOB'
+        && data.priceVersion is int && data.priceVersion > 0
+        && (data.availability == 'AVAILABLE' || data.availability == 'UNAVAILABLE')
+        && data.active is bool && data.featured is bool
+        && data.version is int && data.version > 0
+        && data.createdAt is timestamp && data.updatedAt is timestamp;
+    }
+    function pricingShape(data,id) {
+      return data.keys().hasAll(['productId','costMinor','profitMinor','billingRateBps','currency','pricingPolicyVersion',
+        'version','createdAt','updatedAt'])
+        && data.keys().hasOnly(['productId','costMinor','profitMinor','billingRateBps','currency','pricingPolicyVersion',
+        'version','createdAt','updatedAt'])
+        && data.productId == id && data.costMinor is int && data.costMinor >= 0
+        && data.profitMinor is int && data.profitMinor >= 0
+        && data.billingRateBps is int && data.billingRateBps >= 0 && data.billingRateBps <= 10000
+        && data.currency == 'BOB' && data.pricingPolicyVersion == 'cost-plus-fixed-v1'
+        && data.version is int && data.version > 0
+        && data.createdAt is timestamp && data.updatedAt is timestamp;
+    }
+    function inventoryShape(data,id) {
+      return data.keys().hasAll(['productId','onHand','committed','version','updatedAt'])
+        && data.keys().hasOnly(['productId','onHand','committed','version','updatedAt'])
+        && data.productId == id && data.onHand is int && data.onHand >= 0
+        && data.committed is int && data.committed >= 0 && data.onHand >= data.committed
+        && data.version is int && data.version > 0 && data.updatedAt is timestamp;
+    }
+
     match /products/{id} {
-      allow read: if resource.data.active == true;
-      allow write: if false;
+      allow read: if isAdmin() || resource.data.active == true;
+      allow create: if isAdmin() && productShape(request.resource.data) && request.resource.data.version == 1;
+      allow update: if isAdmin() && productShape(request.resource.data)
+        && request.resource.data.version == resource.data.version + 1
+        && request.resource.data.createdAt == resource.data.createdAt
+        && request.resource.data.slug == resource.data.slug && request.resource.data.sku == resource.data.sku;
+      allow delete: if false;
     }
     match /categories/{id} {
-      allow read: if resource.data.active == true;
-      allow write: if false;
+      allow read: if isAdmin() || resource.data.active == true;
+      allow create: if isAdmin() && categoryShape(request.resource.data) && request.resource.data.version == 1;
+      allow update: if isAdmin() && categoryShape(request.resource.data) && request.resource.data.createdAt == resource.data.createdAt
+        && ((request.resource.data.version == resource.data.version + 1 && request.resource.data.slug == resource.data.slug)
+          || (request.resource.data.version == resource.data.version
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['catalogUpdatedAt'])));
+      allow delete: if false;
+    }
+    match /productPricing/{id} {
+      allow read: if isAdmin();
+      allow create: if isAdmin() && pricingShape(request.resource.data,id) && request.resource.data.version == 1;
+      allow update: if isAdmin() && pricingShape(request.resource.data,id)
+        && request.resource.data.version == resource.data.version + 1
+        && request.resource.data.createdAt == resource.data.createdAt;
+      allow delete: if false;
+    }
+    match /inventory/{id} {
+      allow read: if isAdmin();
+      allow create: if isAdmin() && inventoryShape(request.resource.data,id) && request.resource.data.version == 1;
+      allow update: if isAdmin() && inventoryShape(request.resource.data,id)
+        && request.resource.data.version == resource.data.version + 1;
+      allow delete: if false;
+    }
+    match /slugRegistry/{id} {
+      allow read: if isAdmin();
+      allow create, update: if isAdmin() && request.resource.data.keys().hasAll(['entityId'])
+        && request.resource.data.keys().hasOnly(['entityId']) && request.resource.data.entityId is string;
+      allow delete: if false;
+    }
+    match /skuRegistry/{id} {
+      allow read: if isAdmin();
+      allow create, update: if isAdmin() && request.resource.data.keys().hasAll(['entityId'])
+        && request.resource.data.keys().hasOnly(['entityId']) && request.resource.data.entityId is string;
+      allow delete: if false;
+    }
+    match /auditEvents/{id} {
+      allow read: if isAdmin();
+      allow create: if isAdmin() && request.resource.data.keys().hasAll(['actorId','action','entityId','createdAt'])
+        && request.resource.data.keys().hasOnly(['actorId','action','entityId','createdAt'])
+        && request.resource.data.actorId == request.auth.uid && request.resource.data.action is string
+        && request.resource.data.entityId is string && request.resource.data.createdAt is timestamp;
+      allow update, delete: if false;
     }
     match /{document=**} {
       allow read, write: if false;

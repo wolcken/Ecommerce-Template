@@ -1,6 +1,6 @@
 # ecommerce-base
 
-Base reutilizable de comercio electrónico con Vite, React y TypeScript. Gestor de paquetes: **Yarn 1.22.22**. Entorno validado con Node 24.13.0.
+Base reutilizable de comercio electrónico con Vite, React, TypeScript y Firebase Spark. Gestor: Yarn 1.22.22. Entorno validado con Node 24.
 
 ## Desarrollo
 
@@ -13,105 +13,92 @@ yarn dev
 yarn lint
 yarn typecheck
 yarn test
+yarn test:integration
 yarn build
-yarn preview
 ```
 
-Conservar yarn.lock en el repositorio y usar Yarn para agregar dependencias.
+## Arquitectura Spark
 
-## Fase 1: base navegable
+La aplicación usa Firebase Authentication y una única base Firestore. No despliega Cloud Functions ni Firebase Storage y no requiere asociar una cuenta de facturación.
 
-- Routing con React Router; layouts público y administrativo separados.
-- Inicio, catálogo, filtros por categoría, detalle de producto y página 404.
-- Carrito vacío y pantallas de acceso/registro sin operaciones activas.
-- Panel de administración de muestra en /admin, /admin/productos y /admin/categorias.
-- Estilos adaptables a móvil, navegación por teclado y configuración de marca.
-- Productos ficticios; no hay almacenamiento, autenticación, checkout ni Firebase.
+- Visitantes: catálogo activo y carrito local.
+- USER: acceso y preparación de una solicitud.
+- ADMIN: catálogo, precios privados e inventario mediante transacciones Firestore.
+- Reglas: solo ADMIN escribe catálogo; costos e inventario nunca son públicos.
+- Imágenes: URL HTTPS pública opcional. La aplicación no sube archivos.
+- Checkout: borrador local. La confirmación manual y las solicitudes persistidas pertenecen a la siguiente fase.
+- Reservas: política prevista de 24 horas desde la confirmación administrativa; todavía no comprometen stock ni vencen automáticamente.
 
-**En modo demo, el panel solo muestra datos de ejemplo. En modo Firebase requiere sesión ADMIN.** No introducir información real ni habilitar operaciones de administración antes de implementar autorización en el servidor o reglas del proveedor de datos. Agregar al carrito tampoco reserva stock.
+El precio usa costo + ganancia fija + 16 % inicial sobre esa suma. Ejemplo acordado: Bs 5000 + Bs 200 + 16 % = Bs 6032. Costos, ganancias y NIT no se colocan en variables VITE_* ni en documentos públicos.
 
-## Estructura
+## Firebase
 
-- src/app: composición, rutas y layouts.
-- src/config: configuración pública y tipos de tienda.
-- src/features/catalog: páginas, componentes, tipos y datos ficticios de catálogo.
-- src/features/cart, auth, admin: pantallas iniciales por funcionalidad.
-- src/shared: componentes y utilidades realmente compartidos.
-- src/styles: estilos globales, diseño adaptable y variables visuales.
+Copiar .env.example a .env.local, colocar la configuración web pública y usar:
 
-Las páginas no importarán Firebase directamente. En la fase de datos se definirán contratos de servicios y sus adaptadores.
+```sh
+yarn firebase:check
+yarn firebase:smoke
+```
 
-## Personalización
+Las reglas e índices del proyecto ecommerce-base-62b9c están publicados. Para volver a publicarlos:
 
-Editar src/config/store.config.ts para cambiar nombre, monograma, descripción, locale, moneda, contacto y tema. Se puede añadir logoUrl con una ruta pública, por ejemplo /marca.svg. Las variables de tema se aplican al iniciar la aplicación; el título y el idioma también se derivan de esta configuración.
+```sh
+yarn firebase:deploy --only firestore:rules,firestore:indexes --project ecommerce-base-62b9c --non-interactive
+```
 
-Los textos editoriales de la portada viven en HomePage.tsx. La configuración estática requiere volver a compilar para publicar sus cambios. src/styles/tokens.css define los valores visuales base.
+La cuenta ADMIN se asigna fuera de la aplicación, con coincidencia exacta entre UID y correo:
 
-Los importes de muestra se expresan en unidades menores (centavos para BOB) y se presentan con Intl.NumberFormat. Regla comercial acordada: costo + ganancia fija + 16 % sobre esa suma. La integración fiscal es independiente. Costos, márgenes, credenciales y otros datos privados nunca deben ir en la configuración pública ni en variables VITE_*.
+```sh
+yarn firebase:admin --project ID --uid UID --email CORREO
+yarn firebase:admin --project ID --uid UID --email CORREO --grant
+```
 
-commerce reserva opciones de pedidos, reservas y entrega para las fases funcionales. Sus valores actuales no habilitan operaciones de compra.
+Después de modificar claims, cerrar y volver a iniciar sesión.
+
+Para pruebas de reglas:
+
+```sh
+yarn test:integration
+```
+
+Para una interfaz conectada a Auth y Firestore locales:
+
+```sh
+yarn emulators
+# otra terminal
+yarn dev:emulator
+```
 
 ## Rutas
 
 - / — inicio
-- /productos — colección completa
-- /categorias/:slug — productos de una categoría
+- /productos — catálogo
+- /categorias/:slug — categoría
 - /productos/:slug — detalle
-- /carrito — estado vacío
-- /login y /registro — acceso pendiente de implementación
-- /admin — resumen de demostración
-- /admin/productos y /admin/categorias — vistas de consulta
-- Cualquier ruta, categoría o producto inexistente muestra una página 404.
+- /carrito — carrito persistente en el navegador
+- /checkout — borrador de solicitud y datos de facturación en memoria
+- /login, /registro y /recuperar-acceso — autenticación
+- /admin, /admin/productos y /admin/categorias — administración protegida
+- Cualquier ruta inexistente — página 404
 
-Para desplegar esta SPA, configurar el alojamiento para servir index.html en las rutas de la aplicación que no correspondan a archivos. Esto permite abrir o recargar enlaces internos.
+Configurar el hosting de la SPA para devolver index.html en rutas internas.
 
-## Próximas fases
+## Personalización
 
-2. Base de dominio y contratos completada; ver documentación de fase 2. Reservas y configuración concreta de Firebase pendientes.
-3. Implementar catálogo conectado, administración de productos/categorías e inventario.
-4. Carrito de visitante, identificación al confirmar, pedidos/reservas y datos de facturación.
-5. Validación de precios y stock, experiencia final y despliegue.
+- src/config/store.config.ts: nombre, descripción, moneda y tema.
+- src/features/catalog: catálogo público.
+- src/features/admin: administración.
+- src/features/cart: carrito local por visitante/cuenta.
+- src/features/orders: borrador de solicitud.
+- src/infrastructure/firebase: adaptadores de Authentication y Firestore.
+- src/styles: diseño adaptable.
 
-El precio comercial usa ganancia fija y recargo configurable (16 % inicial). Quedan pendientes duración de reservas, transiciones, entrega y configuración concreta de Firebase. Un carrito no compromete existencias; pedidos y reservas requieren validación confiable de precios y disponibilidad.
+## Documentación por fases
 
-## Verificación manual
+- [Dominio y precios](docs/phase-2-domain.md)
+- [Preparación Firebase](docs/phase-3-firebase.md)
+- [Administración inicial](docs/phase-4-admin.md)
+- [Carrito y borrador](docs/phase-5-cart.md)
+- [Arquitectura Spark actual](docs/phase-6-readiness.md)
 
-- Recorrer inicio → catálogo → categoría → producto → volver.
-- Abrir directamente y recargar una ruta de producto.
-- Comprobar rutas y slugs inexistentes.
-- Revisar carrito, acceso y registro: no deben simular compras ni sesiones.
-- Visitar las tres vistas de administración y volver a la tienda.
-- Revisar navegación por teclado y ancho móvil (390 px).
-
-## Fase 2: dominio y contratos
-
-- [Modelo de datos, precios y decisiones pendientes](docs/phase-2-domain.md).
-- [Persistencia, permisos y preparación Firebase](docs/phase-2-firebase.md).
-- Modelos independientes del SDK y contratos de servicios en src/app/services/contracts.ts.
-- Separación de catálogo público, costos, perfiles, inventario y pedidos.
-- Cálculo de precios en centavos con pruebas ejecutables: yarn test.
-- Ejemplo acordado: Bs 5.000 + Bs 200 + 16 % = Bs 6.032.
-- Estado al cerrar fase 2: integración Firebase pendiente. Ver fase 3 para el estado actual.
-
-Siguiente bloque: confirmar proyecto/región/proveedor de acceso y conectar Authentication
-y catálogo mediante adaptadores, reglas y pruebas de emuladores. La activación de reservas
-y checkout espera las decisiones comerciales restantes.
-
-## Fase 3: Firebase preparado
-
-Consulta [la guía de configuración y validación](docs/phase-3-firebase.md). Completa .env.local, habilita correo/contraseña y configura las reglas de Firestore; después cambia VITE_DATA_SOURCE a firebase y reinicia Vite. Los servicios reales quedan pendientes de probar con tu proyecto.
-
-Se incluyen registro, acceso, recuperación, sesión, guard ADMIN y catálogo de solo lectura. Las operaciones comerciales siguen deshabilitadas. .env.example es la plantilla versionada.
-
-## Fase 4: administración
-
-Formularios y backend de productos/categorías implementados y probados en emuladores. Consulta [alcance, validación y pasos de despliegue](docs/phase-4-admin.md). El proyecto real aún requiere publicación de reglas y funciones; no se ha asignado una cuenta ADMIN.
-
-
-## Fase 5: carrito y borrador
-
-Carrito persistente por navegador y cuenta, cantidades y subtotal; /checkout permite revisar datos del comprador y facturación sin enviarlos. Confirmación y reservas pendientes. Consulta [alcance y validación](docs/phase-5-cart.md). Las secciones iniciales describen el avance histórico de cada fase.
-
-## Fase 6: cotización y preparación de publicación
-
-Cotización autenticada con precio calculado en servidor, disponibilidad, entrega simulada y política de reservas de 24 horas. Cuenta y catálogo locales: yarn seed:emulator. Comprobación previa: yarn firebase:check. Consulta [alcance, pruebas y pasos pendientes](docs/phase-6-readiness.md). Reglas e índices publicados; rol ADMIN real asignado. Functions requiere el plan Blaze. Confirmación y vencimiento automático todavía pendientes.
+Siguiente bloque: solicitudes de pedido/reserva en Firestore, revisión manual por ADMIN y compromiso de stock al confirmar. El flujo no incorporará pagos, facturación fiscal automática ni vencimientos programados mientras permanezca en Spark.

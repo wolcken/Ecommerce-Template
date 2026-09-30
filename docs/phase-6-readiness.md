@@ -1,86 +1,83 @@
-# Fase 6: cotización del carrito y preparación de publicación
+# Fase 6: arquitectura Firebase Spark
 
-## Decisiones confirmadas
+## Decisión
 
-- Cuenta administradora real: admin@ecommerce.com.
-- Recojo en tienda y envío simulados. Ambos tienen costo cero en esta etapa; no representan una tarifa comercial.
-- Reservas de 24 horas desde su futura confirmación.
+La base permanecerá en el plan Spark. No se usan Cloud Functions, Cloud Run, Firebase Storage ni servicios programados. Los productos aceptan una URL HTTPS pública opcional para su imagen.
 
-## Implementado
+Proyecto real: ecommerce-base-62b9c. Cuenta ADMIN configurada: admin@ecommerce.com. El claim admin: true ya fue asignado; después de cualquier cambio de claims se debe cerrar y volver a iniciar sesión.
 
-- previewCheckout requiere autenticación y admite hasta 50 productos, 99 unidades por producto y ninguna línea duplicada.
-- Rechaza campos no permitidos, precios proporcionados por el navegador y modalidades inválidas.
-- Una transacción de solo lectura obtiene una vista consistente de productos, categorías, precios privados e inventario.
-- Recalcula el precio con costo + ganancia fija + recargo. No confía en el precio público ni en un total del cliente.
-- Comprueba stock disponible (onHand - committed) y categorías/productos activos.
-- Devuelve solo precios de venta, totales, modalidad simulada y política de 24 horas. No expone costos, ganancias ni cantidades internas.
-- La interfaz permite cotizar después de iniciar sesión. Cambiar cantidades o modalidad descarta el resultado anterior.
-- Esta vista previa no es una cotización confirmable: no guarda datos personales, no crea pedidos ni compromete stock.
+## Administración
 
-## Pruebas locales reproducibles
+El navegador ADMIN usa transacciones Firestore para mantener:
 
-En terminales separadas:
+- products: proyección pública sin costos ni stock interno.
+- productPricing: costo, ganancia fija y recargo, visible solo para ADMIN.
+- inventory: existencias físicas y comprometidas, visible solo para ADMIN.
+- categories, slugRegistry y skuRegistry.
+- auditEvents con el UID autenticado.
 
-```sh
-yarn emulators
-```
+El adaptador valida entradas, slugs, SKU, URL HTTPS, versiones, categoría, unicidad, stock mínimo y precio calculado. Las reglas vuelven a comprobar esquema, tipos, versiones, campos permitidos y rol ADMIN. No se permite borrar el historial directamente.
 
-```sh
-yarn seed:emulator
-yarn dev:emulator
-```
+La seguridad depende del claim ADMIN: un administrador es un operador de confianza. Spark no aporta una capa de servidor independiente para defenderse de una cuenta ADMIN comprometida.
 
-Abrir http://127.0.0.1:5174. La semilla crea la cuenta local admin@ecommerce.com con la contraseña de prueba acordada y una laptop de Bs 6032, exclusivamente en demo-ecommerce-test. Usa hosts fijos 127.0.0.1, no carga .env.local, no cambia contraseñas existentes y conserva otros claims. Repetirla no duplica el catálogo. Los datos desaparecen al detener los emuladores sin exportarlos.
+## Catálogo e imágenes
 
-## Herramientas del proyecto real
+Visitantes solo pueden leer productos y categorías activos. productPricing, inventory, registros internos y auditoría no admiten lectura pública.
+
+Las imágenes no se cargan a Firebase. El formulario acepta cero o una URL que comience por https://. El propietario de la tienda debe garantizar que la URL sea pública, estable y que tenga permiso para usarla. No usar enlaces que requieran sesión, expiren o expongan tokens.
+
+## Checkout
+
+El carrito conserva identificadores y cantidades en el navegador. /checkout permite revisar comprador, NIT/CI, pedido o reserva y recojo o envío. Los datos personales permanecen en memoria y todavía no se escriben en Firestore.
+
+El total mostrado es una referencia del catálogo. No existe cotización de servidor. En la siguiente fase el cliente enviará una solicitud sin considerarla confirmada; el ADMIN comprobará precio y disponibilidad, y solo entonces comprometerá stock.
+
+Las reservas durarán 24 horas desde la confirmación manual. Sin tareas programadas, su vencimiento y liberación deberán ejecutarse desde el panel administrativo.
+
+## Configuración y comandos
+
+La configuración mínima usa apiKey, authDomain, projectId y appId. messagingSenderId es opcional; esta base no consume Storage ni requiere storageBucket.
 
 ```sh
 yarn firebase:check
 yarn firebase:smoke
-yarn firebase:admin --project ID --uid UID --email CORREO
+yarn test:integration
 ```
 
-firebase:check valida configuración, región, sesión y acceso sin imprimir credenciales. Incluye compatibilidad con el almacén de certificados de Windows.
+Publicación autorizada para Spark:
 
-firebase:smoke consulta el catálogo activo como visitante y comprueba que productPricing rechace la lectura. No escribe datos.
+```sh
+yarn firebase:deploy --only firestore:rules,firestore:indexes --project ecommerce-base-62b9c --non-interactive
+```
 
-firebase:admin consulta una cuenta por UID y exige coincidencia exacta del correo. Solo añade admin: true al incluir --grant y conserva los demás claims. Usa la sesión privilegiada del Firebase CLI y no almacena tokens.
+firebase.json no contiene Functions ni Storage. El paquete Functions de la fase anterior fue retirado del código versionado; permanece recuperable en el historial Git.
 
 ## Estado real verificado
 
-- Proyecto ecommerce-base-62b9c y región us-central1.
-- Firebase CLI autenticado como una cuenta con acceso al proyecto.
-- UID proporcionado corresponde a admin@ecommerce.com.
-- Claim admin: true asignado y comprobado. La cuenta aún figuraba con correo sin verificar.
-- Reglas e índices de Firestore publicados correctamente.
-- Catálogo público accesible y vacío: cero productos y categorías activos.
+- Firebase CLI con acceso al proyecto.
+- UID y correo ADMIN comprobados; claim admin: true activo.
+- Reglas e índices Spark publicados.
+- Catálogo público accesible y actualmente vacío.
 - Lectura anónima de productPricing rechazada.
-- Hosting y Storage no fueron publicados.
-- Cloud Functions no fue publicada: el proyecto debe migrar al plan Blaze para habilitar Artifact Registry. El intento también solicitó habilitar las APIs necesarias de Functions y Cloud Build antes de detenerse por el plan.
-
-Después de verificar el correo, cerrar y volver a iniciar sesión en la aplicación para renovar el token y recibir el claim ADMIN.
+- No se publicó Hosting ni Storage.
+- No hay funciones desplegadas.
 
 ## Validación
 
-22 pruebas unitarias y 13 de integración aprobadas; lint, typecheck, compilaciones frontend/backend y diff check correctos. La compilación mantiene la advertencia previa de bundle superior a 500 kB.
+- 22 pruebas unitarias.
+- 7 pruebas de reglas e integración.
+- Administración Spark probada de extremo a extremo en Firestore Emulator.
+- Ejemplo de precio comprobado: Bs 5000 + Bs 200 + 16 % = Bs 6032.
+- USER no puede escribir catálogo.
+- ADMIN no puede introducir costos en products, URLs HTTP, inventario imposible, versiones antiguas, auditoría de otro usuario ni borrado físico.
+- TypeScript, ESLint, compilación y diff check aprobados.
 
-Las pruebas de cotización cubren autenticación, inyección de precios, límites, duplicados, precio derivado de costos aunque cambie el precio público, falta de stock, producto/categoría desactivados y ausencia de escrituras. En navegador local se verificó acceso ADMIN, laptop a Bs 6032, reserva/envío y descarte de cotizaciones antiguas.
+## Pendiente
 
-## Próximo paso externo
+- Persistir solicitudes de pedido/reserva con acceso exclusivo del propietario y ADMIN.
+- Panel de revisión y confirmación manual.
+- Compromiso y liberación manual de existencias.
+- Ubicación de recojo, dirección de envío y costos reales.
+- Hosting del frontend.
 
-Actualizar el proyecto a Blaze desde Firebase Console si se desea publicar las funciones. Esto requiere que el propietario configure facturación. Después:
-
-```sh
-yarn firebase:deploy --only functions --project ecommerce-base-62b9c --non-interactive
-```
-
-Luego se debe probar acceso real ADMIN y crear un producto controlado. No es posible cotizar en el proyecto real hasta publicar previewCheckout.
-
-## Pendiente funcional
-
-- Cotización persistida, confirmación idempotente y compromiso transaccional de stock.
-- Pedidos, cancelación, vencimiento automático de reservas y liberación de existencias.
-- Dirección de envío, ubicación de recojo, cobros y tarifas reales.
-- Publicación y prueba real de Functions.
-
-La selección de reserva todavía no inicia un plazo ni un proceso automático. La confirmación permanece deshabilitada.
+No se implementarán pagos, secretos fiscales, webhooks o procesos automáticos en el navegador.

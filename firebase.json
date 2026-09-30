@@ -3,24 +3,10 @@
     "rules": "firestore.rules",
     "indexes": "firestore.indexes.json"
   },
-  "storage": {
-    "rules": "storage.rules"
-  },
-  "functions": {
-    "runtime": "nodejs24",
-    "predeploy": [
-      "yarn --cwd functions build"
-    ],
-    "source": "functions"
-  },
   "emulators": {
     "auth": {
       "host": "127.0.0.1",
       "port": 9099
-    },
-    "functions": {
-      "host": "127.0.0.1",
-      "port": 5001
     },
     "ui": {
       "enabled": false

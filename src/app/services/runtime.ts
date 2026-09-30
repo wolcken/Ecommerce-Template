@@ -1,7 +1,4 @@
-import { createCheckoutPreviewService } from '../../infrastructure/firebase/checkout'
-import type { CheckoutPreviewService } from '../../features/orders/preview.models'
-import { getFunctions, connectFunctionsEmulator } from 'firebase/functions'
-import { createAdminService } from '../../infrastructure/firebase/admin'
+import { createFirestoreAdminService } from '../../infrastructure/firebase/admin'
 import type { CatalogAdminService } from '../../features/admin/admin.models'
 import { getApp, getApps, initializeApp } from 'firebase/app'
 import { getAuth, connectAuthEmulator } from 'firebase/auth'
@@ -14,7 +11,7 @@ import type { AuthService, CatalogService } from './contracts'
 type Runtime =
   | { mode: 'demo' }
   | { mode: 'invalid'; message: string }
-  | { mode: 'firebase'; auth: AuthService; catalog: CatalogService; admin: CatalogAdminService; checkout: CheckoutPreviewService }
+  | { mode: 'firebase'; auth: AuthService; catalog: CatalogService; admin: CatalogAdminService }
 
 function createRuntime(): Runtime {
   const environment = readEnvironment(import.meta.env)
@@ -27,13 +24,11 @@ function createRuntime(): Runtime {
     const auth = getAuth(app)
     auth.languageCode = 'es'
     const db = getFirestore(app)
-    const functions = getFunctions(app, import.meta.env.VITE_FIREBASE_FUNCTIONS_REGION || 'us-central1')
     if (emulate && fresh) {
       connectAuthEmulator(auth, 'http://127.0.0.1:9099')
       connectFirestoreEmulator(db, '127.0.0.1', 8080)
-      connectFunctionsEmulator(functions, '127.0.0.1', 5001)
     }
-    return { mode: 'firebase', checkout: createCheckoutPreviewService(functions), auth: createAuthService(auth), admin: createAdminService(functions), catalog: createCatalogService(db) }
+    return { mode: 'firebase', auth: createAuthService(auth), admin: createFirestoreAdminService(db,()=>auth.currentUser?.uid??null), catalog: createCatalogService(db) }
   } catch {
     return { mode: 'invalid', message: 'No se pudo iniciar Firebase. Revisa la configuración web de .env.local y reinicia Vite.' }
   }

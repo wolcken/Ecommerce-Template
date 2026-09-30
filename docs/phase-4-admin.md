@@ -1,5 +1,7 @@
 # Fase 4 — Administración de catálogo y pruebas
 
+> Estado histórico: esta implementación con Cloud Functions fue reemplazada en la fase 6 por transacciones Firestore protegidas para el plan Spark. No se despliegan funciones.
+
 ## Alcance implementado
 
 - Formularios de alta/edición/desactivación de categorías y productos.
