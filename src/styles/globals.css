@@ -208,3 +208,30 @@ tbody tr:last-child > * { border-bottom: 0; }
 button { cursor: pointer; }
 button:disabled { cursor: wait; opacity: .6; }
 @media (max-width:620px) { .admin-fields { grid-template-columns:1fr; } .admin-form { padding:16px; } }
+.cart-layout { display:grid; grid-template-columns:minmax(0,1.6fr) minmax(280px,1fr); gap:40px; align-items:start; margin-top:30px; }
+.cart-row { display:flex; gap:22px; padding:24px 0; border-bottom:1px solid var(--line); }
+.cart-art { width:125px; height:125px; flex-shrink:0; background:#e9ede5; border-radius:6px; display:grid; place-items:center; position:relative; overflow:hidden; }
+.cart-art .product-artwork { width:100%; }
+.cart-description { min-width:0; }
+.cart-description h2 { font-size:1.45rem; margin-bottom:8px; }
+.cart-description p { font-size:.85rem; margin-bottom:10px; }
+.quantity-control { display:inline-flex; align-items:center; border:1px solid var(--line); border-radius:4px; margin-bottom:10px; }
+.quantity-control button { border:0; background:transparent; min-width:42px; min-height:42px; font-size:1.2rem; }
+.quantity-control output { min-width:32px; text-align:center; }
+.text-button { display:block; border:0; padding:5px 0; color:var(--accent); background:none; text-decoration:underline; font:inherit; font-size:.85rem; }
+.cart-summary { padding:28px; border:1px solid var(--line); border-radius:6px; background:#eef0e8; }
+.cart-summary h2 { font-size:1.7rem; }
+.cart-summary p { font-size:.85rem; }
+.summary-total { display:flex; flex-wrap:wrap; justify-content:space-between; gap:12px; border-block:1px solid var(--line); padding:18px 0; margin:18px 0; }
+.summary-total strong { font-size:1.25rem; }
+.cart-summary .button { width:100%; margin-bottom:18px; }
+.cart-unavailable { color:#933c2d; }
+.clear-cart { padding:16px; background:#f3ead9; }
+.clear-cart button { margin-right:12px; padding:8px; }
+.checkout-form { display:grid; gap:18px; }
+.checkout-form h2 { margin:12px 0 0; font-size:1.6rem; }
+.checkout-form label { display:grid; gap:6px; font-size:.9rem; }
+.checkout-form input,.checkout-form select { width:100%; padding:12px; border:1px solid var(--line); border-radius:4px; background:white; font:inherit; }
+.billing-review { padding-top:16px; overflow-wrap:anywhere; }
+.button { border:0; font-family:inherit; }
+@media(max-width:760px){.cart-layout{grid-template-columns:1fr;gap:24px}.cart-summary{padding:22px}.cart-art{width:88px;height:88px}.cart-row{gap:14px}.cart-description h2{font-size:1.3rem}}

@@ -1,3 +1,4 @@
+import { AddToCart } from '../../cart/AddToCart'
 import { Link, useParams } from 'react-router'
 import { useCatalog } from '../catalog.context'
 import { ProductMedia } from '../components/ProductMedia'
@@ -19,7 +20,7 @@ export function ProductPage() {
           {category && <Link className="eyebrow" to={`/categorias/${category.slug}`}>{category.name}</Link>}
           <h1>{product.name}</h1><p className="detail-price">{formatMoney(product.priceMinor)}</p>
           <p>{product.description}</p>
-          <div className="purchase-placeholder"><span className="badge">Vista del catálogo</span><p>Las compras y reservas aún no están disponibles.</p></div>
+          <AddToCart key={product.id} product={product} />
           <Link className="text-link" to="/productos">← Seguir explorando</Link>
         </div>
       </section>

@@ -1,3 +1,4 @@
+import { useCart } from '../../features/cart/cart.context'
 import { runtime } from '../services/runtime'
 import { NavLink, Outlet } from 'react-router'
 import { Brand } from '../../shared/components/Brand'
@@ -5,6 +6,8 @@ import { storeConfig } from '../../config/store.config'
 import type { StoreConfig } from '../../config/store.types'
 
 export function PublicLayout() {
+  const cart = useCart()
+  const quantity = cart.items.reduce((sum,item) => sum + item.quantity, 0)
   const config: StoreConfig = storeConfig
   return (
     <>
@@ -18,7 +21,7 @@ export function PublicLayout() {
         </nav>
         <nav className="account-nav" aria-label="Tu cuenta y carrito">
           <NavLink to="/login">Mi cuenta</NavLink>
-          <NavLink className="cart-link" to="/carrito">Carrito <span>0</span></NavLink>
+          <NavLink className="cart-link" to="/carrito">Carrito <span>{cart.ready ? quantity : '…'}</span></NavLink>
         </nav>
       </header>
       <main id="contenido" className="public-main" tabIndex={-1}><Outlet /></main>

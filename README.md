@@ -106,3 +106,8 @@ Se incluyen registro, acceso, recuperación, sesión, guard ADMIN y catálogo de
 ## Fase 4: administración
 
 Formularios y backend de productos/categorías implementados y probados en emuladores. Consulta [alcance, validación y pasos de despliegue](docs/phase-4-admin.md). El proyecto real aún requiere publicación de reglas y funciones; no se ha asignado una cuenta ADMIN.
+
+
+## Fase 5: carrito y borrador
+
+Carrito persistente por navegador y cuenta, cantidades y subtotal; /checkout permite revisar datos del comprador y facturación sin enviarlos. Confirmación y reservas pendientes. Consulta [alcance y validación](docs/phase-5-cart.md). Las secciones iniciales describen el avance histórico de cada fase.

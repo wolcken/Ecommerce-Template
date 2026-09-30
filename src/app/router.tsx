@@ -1,3 +1,4 @@
+import { CheckoutPage } from '../features/orders/CheckoutPage'
 import { RequireAdmin } from '../features/auth/RequireAdmin'
 import { CatalogBoundary } from '../features/catalog/CatalogBoundary'
 import { Route, Routes } from 'react-router'
@@ -21,6 +22,7 @@ export function AppRoutes() {
         <Route path="productos/:slug" element={<CatalogBoundary><ProductPage /></CatalogBoundary>} />
         <Route path="categorias/:slug" element={<CatalogBoundary><CatalogPage /></CatalogBoundary>} />
         <Route path="carrito" element={<CartPage />} />
+        <Route path="checkout" element={<CheckoutPage />} />
         <Route path="login" element={<AuthPage key="login" mode="login" />} />
         <Route path="recuperar-acceso" element={<AuthPage key="reset" mode="reset" />} />
         <Route path="registro" element={<AuthPage key="register" mode="register" />} />
