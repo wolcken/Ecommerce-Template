@@ -3,6 +3,7 @@ import {
   runTransaction, startAfter, Timestamp, where, type DocumentData, type Firestore, type QueryConstraint,
 } from 'firebase/firestore'
 import type { AdminCategory, AdminPage, AdminProduct, CatalogAdminService, CategoryInput, ProductInput } from '../../features/admin/admin.models'
+import { summarizeInventory } from '../../features/admin/inventory.logic.ts'
 import { calculatePrice } from '../../features/pricing/calculatePrice.ts'
 
 const PAGE_SIZE=100
@@ -80,6 +81,20 @@ export function createFirestoreAdminService(db:Firestore,currentUserId:()=>strin
       return {items,nextCursor:snapshot.size===PAGE_SIZE?snapshot.docs.at(-1)!.id:null}
     } catch(error) {throw failure(error)}
   }
+  async function getInventorySummary() {
+    try {
+      const rows:{onHand:number;committed:number}[]=[]
+      let cursor:string|undefined
+      do {
+        const constraints:QueryConstraint[]=[orderBy(documentId()),limit(PAGE_SIZE)]
+        if(cursor) constraints.push(startAfter(cursor))
+        const snapshot=await getDocsFromServer(query(collection(db,'inventory'),...constraints))
+        rows.push(...snapshot.docs.map(item=>({onHand:item.data().onHand,committed:item.data().committed})))
+        cursor=snapshot.size===PAGE_SIZE?snapshot.docs.at(-1)!.id:undefined
+      } while(cursor)
+      return summarizeInventory(rows)
+    } catch(error) {throw failure(error)}
+  }
   async function saveCategory(raw:CategoryInput) {
     const input=categoryInput(raw)
     try {
@@ -138,5 +153,5 @@ export function createFirestoreAdminService(db:Firestore,currentUserId:()=>strin
       })
     } catch(error) {throw failure(error)}
   }
-  return {listCategories,listProducts,saveCategory,saveProduct}
+  return {listCategories,listProducts,getInventorySummary,saveCategory,saveProduct}
 }

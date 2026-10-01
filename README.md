@@ -105,5 +105,6 @@ Configurar el hosting de la SPA para devolver index.html en rutas internas.
 - [Arquitectura Spark](docs/phase-6-readiness.md)
 - [Pedidos, reservas e inventario](docs/phase-7-orders.md)
 - [Perfil, entrega y preparación de Hosting](docs/phase-8-profile-hosting.md)
+- [Sesión visible e inventario administrativo](docs/phase-9-admin-ux.md)
 
-Siguiente bloque: reemplazar los datos provisionales de tienda, cargar un catálogo controlado, probar los flujos reales USER/ADMIN y revisar la publicación de Hosting.
+Siguiente bloque: reemplazar los datos provisionales de tienda, completar el catálogo y revisar la experiencia visual del flujo USER/ADMIN antes de publicar Hosting.

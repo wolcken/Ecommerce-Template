@@ -94,6 +94,7 @@ test('Spark admin adapter saves and lists a calculated product without Functions
  assert.equal(saved.priceMinor,603200)
  assert.equal(saved.costMinor,500000)
  assert.equal(saved.imageUrl,'https://images.example/adapter.jpg')
+ assert.deepEqual(await service.getInventorySummary(),{productCount:1,onHand:5,committed:0,available:5})
  assert.equal((await getDoc(doc(db,'products','adapter-laptop'))).data().costMinor,undefined)
 })
 

@@ -2,6 +2,7 @@ import { NavLink, Outlet } from 'react-router'
 import { storeConfig } from '../../config/store.config'
 import type { StoreConfig } from '../../config/store.types'
 import { useAuth } from '../../features/auth/auth.context'
+import { SignOutButton } from '../../features/auth/SignOutButton'
 import { useCart } from '../../features/cart/cart.context'
 import { Brand } from '../../shared/components/Brand'
 import { runtime } from '../services/runtime'
@@ -25,6 +26,7 @@ export function PublicLayout() {
         <nav className="account-nav" aria-label="Tu cuenta y carrito">
           {state.status === 'AUTHENTICATED' && <NavLink to="/mis-solicitudes">Solicitudes</NavLink>}
           <NavLink to={state.status === 'AUTHENTICATED' ? '/cuenta' : '/login'}>Mi cuenta</NavLink>
+          <SignOutButton />
           <NavLink className="cart-link" to="/carrito">Carrito <span>{cart.ready ? quantity : '…'}</span></NavLink>
         </nav>
       </header>

@@ -28,9 +28,16 @@ export interface AdminProduct extends Omit<ProductInput, 'expectedVersion'> {
   committed: number
 }
 export interface AdminPage<T> { items: T[]; nextCursor: string | null }
+export interface InventorySummary {
+  productCount: number
+  onHand: number
+  committed: number
+  available: number
+}
 export interface CatalogAdminService {
   listCategories(cursor?: string): Promise<AdminPage<AdminCategory>>
   listProducts(cursor?: string): Promise<AdminPage<AdminProduct>>
+  getInventorySummary(): Promise<InventorySummary>
   saveCategory(input: CategoryInput): Promise<void>
   saveProduct(input: ProductInput): Promise<void>
 }
