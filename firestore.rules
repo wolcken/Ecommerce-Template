@@ -1,8 +1,11 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    function isSignedIn() {
+      return request.auth != null;
+    }
     function isAdmin() {
-      return request.auth != null && request.auth.token.admin == true;
+      return isSignedIn() && request.auth.token.keys().hasAll(['admin']) && request.auth.token.admin == true;
     }
     function categoryShape(data) {
       return data.keys().hasAll(['name','slug','description','active','parentId','position','version','createdAt','updatedAt'])
@@ -57,6 +60,89 @@ service cloud.firestore {
         && data.committed is int && data.committed >= 0 && data.onHand >= data.committed
         && data.version is int && data.version > 0 && data.updatedAt is timestamp;
     }
+    function customerShape(data) {
+      return data is map && data.keys().hasAll(['firstName','lastName','phone'])
+        && data.keys().hasOnly(['firstName','lastName','phone'])
+        && data.firstName is string && data.firstName.size() > 0 && data.firstName.size() <= 120
+        && data.lastName is string && data.lastName.size() > 0 && data.lastName.size() <= 120
+        && data.phone is string && data.phone.size() > 0 && data.phone.size() <= 30;
+    }
+    function billingShape(data) {
+      return data is map && data.keys().hasAll(['name','documentType','documentNumber','documentComplement'])
+        && data.keys().hasOnly(['name','documentType','documentNumber','documentComplement'])
+        && data.name is string && data.name.size() > 0 && data.name.size() <= 200
+        && (data.documentType == 'NIT' || data.documentType == 'CI')
+        && data.documentNumber is string && data.documentNumber.size() > 0 && data.documentNumber.size() <= 40
+        && (data.documentComplement == null
+          || (data.documentComplement is string && data.documentComplement.size() <= 20));
+    }
+    function deliveryShape(data) {
+      return data is map
+        && ((data.method == 'PICKUP'
+          && data.keys().hasAll(['method','locationId'])
+          && data.keys().hasOnly(['method','locationId'])
+          && data.locationId is string && data.locationId.size() > 0 && data.locationId.size() <= 120)
+        || (data.method == 'SHIPPING'
+          && data.keys().hasAll(['method','address'])
+          && data.keys().hasOnly(['method','address'])
+          && data.address is map
+          && data.address.keys().hasAll(['recipient','phone','city','line1','notes'])
+          && data.address.keys().hasOnly(['recipient','phone','city','line1','notes'])
+          && data.address.recipient is string && data.address.recipient.size() > 0 && data.address.recipient.size() <= 120
+          && data.address.phone is string && data.address.phone.size() > 0 && data.address.phone.size() <= 30
+          && data.address.city is string && data.address.city.size() > 0 && data.address.city.size() <= 120
+          && data.address.line1 is string && data.address.line1.size() > 0 && data.address.line1.size() <= 300
+          && data.address.notes is string && data.address.notes.size() <= 500));
+    }
+    function totalsShape(data) {
+      return data is map && data.keys().hasAll(['currency','itemsMinor','shippingMinor','totalMinor'])
+        && data.keys().hasOnly(['currency','itemsMinor','shippingMinor','totalMinor'])
+        && data.currency == 'BOB'
+        && data.itemsMinor is int && data.itemsMinor >= 0
+        && data.shippingMinor is int && data.shippingMinor >= 0
+        && data.totalMinor is int && data.totalMinor == data.itemsMinor + data.shippingMinor;
+    }
+    function orderShape(data) {
+      return data.keys().hasAll(['ownerId','kind','status','number','customer','billing','delivery',
+        'requestedItems','confirmedItems','totals','adminNote','confirmedAt','reservedUntil',
+        'version','createdAt','updatedAt'])
+        && data.keys().hasOnly(['ownerId','kind','status','number','customer','billing','delivery',
+          'requestedItems','confirmedItems','totals','adminNote','confirmedAt','reservedUntil',
+          'version','createdAt','updatedAt'])
+        && data.ownerId is string && data.ownerId.size() > 0
+        && (data.kind == 'ORDER' || data.kind == 'RESERVATION')
+        && (data.status == 'REQUESTED' || data.status == 'CONFIRMED' || data.status == 'REJECTED'
+          || data.status == 'CANCELLED' || data.status == 'COMPLETED' || data.status == 'EXPIRED')
+        && customerShape(data.customer) && billingShape(data.billing) && deliveryShape(data.delivery)
+        && data.requestedItems is list && data.requestedItems.size() > 0 && data.requestedItems.size() <= 50
+        && data.confirmedItems is list && data.confirmedItems.size() <= 50
+        && data.adminNote is string && data.adminNote.size() <= 500
+        && data.version is int && data.version > 0
+        && data.createdAt is timestamp && data.updatedAt is timestamp
+        && ((data.status == 'REQUESTED' || data.status == 'REJECTED')
+          ? data.number == null && data.confirmedItems.size() == 0 && data.totals == null
+            && data.confirmedAt == null && data.reservedUntil == null
+          : data.number is string && data.number.size() > 0
+            && data.confirmedItems.size() > 0 && totalsShape(data.totals)
+            && data.confirmedAt is timestamp
+            && ((data.kind == 'RESERVATION' && data.reservedUntil is timestamp)
+              || (data.kind == 'ORDER' && data.reservedUntil == null)));
+    }
+    function orderTransition(before,after) {
+      return (before.status == 'REQUESTED' && (after.status == 'CONFIRMED' || after.status == 'REJECTED'))
+        || (before.status == 'CONFIRMED'
+          && (after.status == 'COMPLETED' || after.status == 'CANCELLED'
+            || (after.status == 'EXPIRED' && before.kind == 'RESERVATION')));
+    }
+    function commitmentShape(data,id) {
+      return data.keys().hasAll(['orderId','items','status','expiresAt','version','createdAt','updatedAt'])
+        && data.keys().hasOnly(['orderId','items','status','expiresAt','version','createdAt','updatedAt'])
+        && data.orderId == id && data.items is list && data.items.size() > 0 && data.items.size() <= 50
+        && (data.status == 'ACTIVE' || data.status == 'RELEASED' || data.status == 'CONSUMED')
+        && (data.expiresAt == null || data.expiresAt is timestamp)
+        && data.version is int && data.version > 0
+        && data.createdAt is timestamp && data.updatedAt is timestamp;
+    }
 
     match /products/{id} {
       allow read: if isAdmin() || resource.data.active == true;
@@ -89,6 +175,41 @@ service cloud.firestore {
       allow create: if isAdmin() && inventoryShape(request.resource.data,id) && request.resource.data.version == 1;
       allow update: if isAdmin() && inventoryShape(request.resource.data,id)
         && request.resource.data.version == resource.data.version + 1;
+      allow delete: if false;
+    }
+    match /orders/{id} {
+      allow read: if isAdmin() || (isSignedIn() && resource.data.ownerId == request.auth.uid);
+      allow create: if isSignedIn() && orderShape(request.resource.data)
+        && request.resource.data.ownerId == request.auth.uid
+        && request.resource.data.status == 'REQUESTED'
+        && request.resource.data.version == 1
+        && request.resource.data.adminNote == ''
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.updatedAt == request.time;
+      allow update: if isAdmin() && orderShape(request.resource.data)
+        && request.resource.data.version == resource.data.version + 1
+        && request.resource.data.createdAt == resource.data.createdAt
+        && request.resource.data.ownerId == resource.data.ownerId
+        && request.resource.data.kind == resource.data.kind
+        && request.resource.data.customer == resource.data.customer
+        && request.resource.data.billing == resource.data.billing
+        && request.resource.data.delivery == resource.data.delivery
+        && request.resource.data.requestedItems == resource.data.requestedItems
+        && orderTransition(resource.data,request.resource.data);
+      allow delete: if false;
+    }
+    match /stockCommitments/{id} {
+      allow read: if isAdmin();
+      allow create: if isAdmin() && commitmentShape(request.resource.data,id)
+        && request.resource.data.status == 'ACTIVE' && request.resource.data.version == 1;
+      allow update: if isAdmin() && commitmentShape(request.resource.data,id)
+        && request.resource.data.version == resource.data.version + 1
+        && request.resource.data.orderId == resource.data.orderId
+        && request.resource.data.items == resource.data.items
+        && request.resource.data.expiresAt == resource.data.expiresAt
+        && request.resource.data.createdAt == resource.data.createdAt
+        && resource.data.status == 'ACTIVE'
+        && (request.resource.data.status == 'RELEASED' || request.resource.data.status == 'CONSUMED');
       allow delete: if false;
     }
     match /slugRegistry/{id} {

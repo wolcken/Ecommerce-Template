@@ -1,4 +1,3 @@
-/** Regla comercial acordada; no representa liquidación ni emisión fiscal. */
 export interface PricingPolicy {
   version: 'cost-plus-fixed-v1'
   currency: 'BOB'
@@ -17,17 +16,20 @@ export const pricingPolicy: PricingPolicy = {
   rounding: 'HALF_UP_PER_UNIT',
 }
 
-/** Duración y transiciones de reserva pendientes; no habilita operaciones. */
-export interface PendingCommercePolicy {
-  status: 'PENDING_DEFINITION'
-  ordersEnabled: false
-  reservationsEnabled: false
-  reservationDurationMinutes: null
+export interface CommercePolicy {
+  version: 'manual-review-v1'
+  ordersEnabled: true
+  reservationsEnabled: true
+  reservationDurationMinutes: 1440
+  deliveryMethods: readonly ['PICKUP', 'SHIPPING']
+  shippingMinor: 0
 }
 
-export const pendingCommercePolicy: PendingCommercePolicy = {
-  status: 'PENDING_DEFINITION',
-  ordersEnabled: false,
-  reservationsEnabled: false,
-  reservationDurationMinutes: null,
+export const commercePolicy: CommercePolicy = {
+  version: 'manual-review-v1',
+  ordersEnabled: true,
+  reservationsEnabled: true,
+  reservationDurationMinutes: 1440,
+  deliveryMethods: ['PICKUP', 'SHIPPING'],
+  shippingMinor: 0,
 }

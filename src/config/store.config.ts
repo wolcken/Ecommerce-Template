@@ -1,6 +1,5 @@
 import type { StoreConfig } from './store.types'
 
-// Solo información pública: nunca incluir costos, márgenes ni credenciales.
 export const storeConfig = {
   name: 'Esencial',
   monogram: 'e.',
@@ -16,8 +15,8 @@ export const storeConfig = {
     'font-heading': 'Georgia, "Times New Roman", serif',
   },
   commerce: {
-    ordersEnabled: false,
-    reservationsEnabled: false,
-    deliveryMethods: [],
+    ordersEnabled: true,
+    reservationsEnabled: true,
+    deliveryMethods: ['pickup', 'shipping'],
   },
 } satisfies StoreConfig

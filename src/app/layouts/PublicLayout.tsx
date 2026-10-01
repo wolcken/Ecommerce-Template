@@ -1,14 +1,17 @@
-import { useCart } from '../../features/cart/cart.context'
-import { runtime } from '../services/runtime'
 import { NavLink, Outlet } from 'react-router'
-import { Brand } from '../../shared/components/Brand'
 import { storeConfig } from '../../config/store.config'
 import type { StoreConfig } from '../../config/store.types'
+import { useAuth } from '../../features/auth/auth.context'
+import { useCart } from '../../features/cart/cart.context'
+import { Brand } from '../../shared/components/Brand'
+import { runtime } from '../services/runtime'
 
 export function PublicLayout() {
   const cart = useCart()
-  const quantity = cart.items.reduce((sum,item) => sum + item.quantity, 0)
+  const { state } = useAuth()
+  const quantity = cart.items.reduce((sum, item) => sum + item.quantity, 0)
   const config: StoreConfig = storeConfig
+
   return (
     <>
       <a className="skip-link" href="#contenido">Saltar al contenido</a>
@@ -20,6 +23,7 @@ export function PublicLayout() {
           <NavLink to="/productos">Colección</NavLink>
         </nav>
         <nav className="account-nav" aria-label="Tu cuenta y carrito">
+          {state.status === 'AUTHENTICATED' && <NavLink to="/mis-solicitudes">Solicitudes</NavLink>}
           <NavLink to="/login">Mi cuenta</NavLink>
           <NavLink className="cart-link" to="/carrito">Carrito <span>{cart.ready ? quantity : '…'}</span></NavLink>
         </nav>
@@ -31,6 +35,7 @@ export function PublicLayout() {
           <nav aria-label="Enlaces del pie">
             <NavLink to="/productos">Ver colección</NavLink>
             <NavLink to="/carrito">Mi carrito</NavLink>
+            {state.status === 'AUTHENTICATED' && <NavLink to="/mis-solicitudes">Mis solicitudes</NavLink>}
             {config.contact.email && <a href={`mailto:${config.contact.email}`}>{config.contact.email}</a>}
             {config.contact.phone && <a href={`tel:${config.contact.phone}`}>{config.contact.phone}</a>}
           </nav>

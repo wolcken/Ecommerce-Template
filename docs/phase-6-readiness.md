@@ -1,5 +1,7 @@
 # Fase 6: arquitectura Firebase Spark
 
+> Estado histórico: la fase 7 ya implementó solicitudes persistidas, confirmación manual y movimientos transaccionales de inventario. Consulta [Pedidos, reservas e inventario](phase-7-orders.md).
+
 ## Decisión
 
 La base permanecerá en el plan Spark. No se usan Cloud Functions, Cloud Run, Firebase Storage ni servicios programados. Los productos aceptan una URL HTTPS pública opcional para su imagen.
@@ -28,9 +30,9 @@ Las imágenes no se cargan a Firebase. El formulario acepta cero o una URL que c
 
 ## Checkout
 
-El carrito conserva identificadores y cantidades en el navegador. /checkout permite revisar comprador, NIT/CI, pedido o reserva y recojo o envío. Los datos personales permanecen en memoria y todavía no se escriben en Firestore.
+El carrito conserva identificadores y cantidades en el navegador. Desde la fase 7, /checkout guarda la solicitud autenticada en Firestore con comprador, NIT/CI, pedido o reserva y recojo o envío.
 
-El total mostrado es una referencia del catálogo. No existe cotización de servidor. En la siguiente fase el cliente enviará una solicitud sin considerarla confirmada; el ADMIN comprobará precio y disponibilidad, y solo entonces comprometerá stock.
+El total mostrado antes de enviar es una referencia. La solicitud nace sin un total confiable; el ADMIN recalcula precio y disponibilidad al confirmar, y solo entonces compromete stock.
 
 Las reservas durarán 24 horas desde la confirmación manual. Sin tareas programadas, su vencimiento y liberación deberán ejecutarse desde el panel administrativo.
 
@@ -64,8 +66,8 @@ firebase.json no contiene Functions ni Storage. El paquete Functions de la fase 
 
 ## Validación
 
-- 22 pruebas unitarias.
-- 7 pruebas de reglas e integración.
+- 25 pruebas unitarias.
+- 8 pruebas de reglas e integración.
 - Administración Spark probada de extremo a extremo en Firestore Emulator.
 - Ejemplo de precio comprobado: Bs 5000 + Bs 200 + 16 % = Bs 6032.
 - USER no puede escribir catálogo.
@@ -74,10 +76,8 @@ firebase.json no contiene Functions ni Storage. El paquete Functions de la fase 
 
 ## Pendiente
 
-- Persistir solicitudes de pedido/reserva con acceso exclusivo del propietario y ADMIN.
-- Panel de revisión y confirmación manual.
-- Compromiso y liberación manual de existencias.
-- Ubicación de recojo, dirección de envío y costos reales.
-- Hosting del frontend.
+- Configuración comercial de la ubicación de recojo y costos reales de envío.
+- Perfil reutilizable del comprador.
+- Filtros administrativos y preparación del hosting.
 
 No se implementarán pagos, secretos fiscales, webhooks o procesos automáticos en el navegador.

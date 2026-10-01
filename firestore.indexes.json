@@ -4,61 +4,42 @@
       "collectionGroup": "products",
       "queryScope": "COLLECTION",
       "fields": [
-        {
-          "fieldPath": "active",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "slug",
-          "order": "ASCENDING"
-        }
+        { "fieldPath": "active", "order": "ASCENDING" },
+        { "fieldPath": "slug", "order": "ASCENDING" }
       ]
     },
     {
       "collectionGroup": "products",
       "queryScope": "COLLECTION",
       "fields": [
-        {
-          "fieldPath": "active",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "categoryId",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "featured",
-          "order": "ASCENDING"
-        }
+        { "fieldPath": "active", "order": "ASCENDING" },
+        { "fieldPath": "categoryId", "order": "ASCENDING" },
+        { "fieldPath": "featured", "order": "ASCENDING" }
       ]
     },
     {
       "collectionGroup": "categories",
       "queryScope": "COLLECTION",
       "fields": [
-        {
-          "fieldPath": "active",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "slug",
-          "order": "ASCENDING"
-        }
+        { "fieldPath": "active", "order": "ASCENDING" },
+        { "fieldPath": "slug", "order": "ASCENDING" }
       ]
     },
     {
+      "collectionGroup": "categories",
       "queryScope": "COLLECTION",
       "fields": [
-        {
-          "fieldPath": "active",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "parentId",
-          "order": "ASCENDING"
-        }
-      ],
-      "collectionGroup": "categories"
+        { "fieldPath": "active", "order": "ASCENDING" },
+        { "fieldPath": "parentId", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "orders",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "ownerId", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
+      ]
     }
   ],
   "fieldOverrides": []

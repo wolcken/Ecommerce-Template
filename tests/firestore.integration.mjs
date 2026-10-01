@@ -1,3 +1,4 @@
+import {createFirestoreOrderService} from '../src/infrastructure/firebase/orders.ts'
 import {createFirestoreAdminService} from '../src/infrastructure/firebase/admin.ts'
 import test,{before,after} from 'node:test'
 import assert from 'node:assert/strict'
@@ -95,3 +96,51 @@ test('Spark admin adapter saves and lists a calculated product without Functions
  assert.equal((await getDoc(doc(db,'products','adapter-laptop'))).data().costMinor,undefined)
 })
 
+test('customer submits a request and ADMIN commits then releases stock',async()=>{
+ const customerDb=environment.authenticatedContext('customer').firestore()
+ const customerOrders=createFirestoreOrderService(customerDb,()=> 'customer')
+ const created=await customerOrders.create({
+  kind:'RESERVATION',
+  items:[{productId:'adapter-laptop',quantity:2}],
+  customer:{firstName:'Ana',lastName:'Pérez',phone:'70000000'},
+  billing:{name:'Ana Pérez',documentType:'NIT',documentNumber:'00123',documentComplement:null},
+  delivery:{method:'PICKUP',locationId:'main-store'},
+ })
+ assert.equal(created.status,'REQUESTED')
+ assert.equal(created.totals,null)
+ await assertFails(getDoc(doc(environment.authenticatedContext('other').firestore(),'orders',created.id)))
+ await assertFails(setDoc(doc(customerDb,'orders',created.id),{status:'CONFIRMED'},{merge:true}))
+ await assertFails(getDoc(doc(customerDb,'inventory','adapter-laptop')))
+
+ const adminDb=environment.authenticatedContext('admin-user',{admin:true}).firestore()
+ const adminOrders=createFirestoreOrderService(adminDb,()=> 'admin-user')
+ const confirmed=await adminOrders.transition({orderId:created.id,expectedVersion:1,action:'CONFIRM',note:'Lista para coordinar.'})
+ assert.equal(confirmed.status,'CONFIRMED')
+ assert.equal(confirmed.totals.totalMinor,1206400)
+ assert.ok(confirmed.reservedUntil)
+ assert.equal((await getDoc(doc(adminDb,'inventory','adapter-laptop'))).data().committed,2)
+ assert.equal((await getDoc(doc(adminDb,'stockCommitments',created.id))).data().status,'ACTIVE')
+
+ const mine=await customerOrders.listMine()
+ assert.equal(mine[0].number,confirmed.number)
+ assert.equal(mine[0].confirmedItems[0].unitPriceMinor,603200)
+
+ const cancelled=await adminOrders.transition({orderId:created.id,expectedVersion:2,action:'CANCEL',note:'Cancelada en prueba.'})
+ assert.equal(cancelled.status,'CANCELLED')
+ assert.equal((await getDoc(doc(adminDb,'inventory','adapter-laptop'))).data().committed,0)
+ assert.equal((await getDoc(doc(adminDb,'stockCommitments',created.id))).data().status,'RELEASED')
+
+ const purchase=await customerOrders.create({
+  kind:'ORDER',items:[{productId:'adapter-laptop',quantity:1}],
+  customer:{firstName:'Ana',lastName:'Pérez',phone:'70000000'},
+  billing:{name:'Ana Pérez',documentType:'CI',documentNumber:'00123',documentComplement:'1A'},
+  delivery:{method:'SHIPPING',address:{recipient:'Ana Pérez',phone:'70000000',city:'La Paz',line1:'Calle de prueba 1',notes:''}},
+ })
+ const purchaseConfirmed=await adminOrders.transition({orderId:purchase.id,expectedVersion:1,action:'CONFIRM',note:''})
+ const completed=await adminOrders.transition({orderId:purchase.id,expectedVersion:purchaseConfirmed.version,action:'COMPLETE',note:'Entregado.'})
+ assert.equal(completed.status,'COMPLETED')
+ const finalInventory=(await getDoc(doc(adminDb,'inventory','adapter-laptop'))).data()
+ assert.equal(finalInventory.onHand,4)
+ assert.equal(finalInventory.committed,0)
+ assert.equal((await getDoc(doc(adminDb,'stockCommitments',purchase.id))).data().status,'CONSUMED')
+})

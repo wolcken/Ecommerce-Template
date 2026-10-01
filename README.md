@@ -22,12 +22,12 @@ yarn build
 La aplicación usa Firebase Authentication y una única base Firestore. No despliega Cloud Functions ni Firebase Storage y no requiere asociar una cuenta de facturación.
 
 - Visitantes: catálogo activo y carrito local.
-- USER: acceso y preparación de una solicitud.
-- ADMIN: catálogo, precios privados e inventario mediante transacciones Firestore.
+- USER: acceso, envío de pedidos/reservas y consulta de sus solicitudes.
+- ADMIN: catálogo, revisión de solicitudes e inventario mediante transacciones Firestore.
 - Reglas: solo ADMIN escribe catálogo; costos e inventario nunca son públicos.
 - Imágenes: URL HTTPS pública opcional. La aplicación no sube archivos.
-- Checkout: borrador local. La confirmación manual y las solicitudes persistidas pertenecen a la siguiente fase.
-- Reservas: política prevista de 24 horas desde la confirmación administrativa; todavía no comprometen stock ni vencen automáticamente.
+- Checkout: solicitud persistida sin aceptar precios del navegador; el ADMIN recalcula y confirma manualmente.
+- Reservas: duran 24 horas desde la confirmación, comprometen stock y vencen manualmente en el panel ADMIN.
 
 El precio usa costo + ganancia fija + 16 % inicial sobre esa suma. Ejemplo acordado: Bs 5000 + Bs 200 + 16 % = Bs 6032. Costos, ganancias y NIT no se colocan en variables VITE_* ni en documentos públicos.
 
@@ -76,9 +76,10 @@ yarn dev:emulator
 - /categorias/:slug — categoría
 - /productos/:slug — detalle
 - /carrito — carrito persistente en el navegador
-- /checkout — borrador de solicitud y datos de facturación en memoria
+- /checkout — envío autenticado de pedido o reserva
+- /mis-solicitudes — historial privado del cliente
 - /login, /registro y /recuperar-acceso — autenticación
-- /admin, /admin/productos y /admin/categorias — administración protegida
+- /admin, /admin/productos, /admin/categorias y /admin/solicitudes — administración protegida
 - Cualquier ruta inexistente — página 404
 
 Configurar el hosting de la SPA para devolver index.html en rutas internas.
@@ -89,7 +90,7 @@ Configurar el hosting de la SPA para devolver index.html en rutas internas.
 - src/features/catalog: catálogo público.
 - src/features/admin: administración.
 - src/features/cart: carrito local por visitante/cuenta.
-- src/features/orders: borrador de solicitud.
+- src/features/orders: solicitudes, historial y estados comerciales.
 - src/infrastructure/firebase: adaptadores de Authentication y Firestore.
 - src/styles: diseño adaptable.
 
@@ -99,6 +100,7 @@ Configurar el hosting de la SPA para devolver index.html en rutas internas.
 - [Preparación Firebase](docs/phase-3-firebase.md)
 - [Administración inicial](docs/phase-4-admin.md)
 - [Carrito y borrador](docs/phase-5-cart.md)
-- [Arquitectura Spark actual](docs/phase-6-readiness.md)
+- [Arquitectura Spark](docs/phase-6-readiness.md)
+- [Pedidos, reservas e inventario](docs/phase-7-orders.md)
 
-Siguiente bloque: solicitudes de pedido/reserva en Firestore, revisión manual por ADMIN y compromiso de stock al confirmar. El flujo no incorporará pagos, facturación fiscal automática ni vencimientos programados mientras permanezca en Spark.
+Siguiente bloque: perfil reutilizable del comprador, configuración real de recojo/envío, filtros administrativos y preparación del hosting.

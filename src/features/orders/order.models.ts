@@ -1,13 +1,31 @@
 import type { BillingDetails } from '../auth/auth.models'
 import type { CartItem } from '../cart/cart.models'
-import type { Instant, MinorAmount, RecordMetadata } from '../../shared/types/domain'
+import type { Instant, MinorAmount } from '../../shared/types/domain'
+
+export type OrderKind = 'ORDER' | 'RESERVATION'
+export type OrderStatus =
+  | 'REQUESTED'
+  | 'CONFIRMED'
+  | 'REJECTED'
+  | 'CANCELLED'
+  | 'COMPLETED'
+  | 'EXPIRED'
 
 export type DeliverySelection =
   | { method: 'PICKUP'; locationId: string }
-  | { method: 'SHIPPING'; address: { recipient: string; phone: string; city: string; line1: string; notes: string } }
+  | {
+      method: 'SHIPPING'
+      address: {
+        recipient: string
+        phone: string
+        city: string
+        line1: string
+        notes: string
+      }
+    }
 
-export interface CheckoutInput {
-  kind: 'ORDER' | 'RESERVATION'
+export interface OrderRequestInput {
+  kind: OrderKind
   items: readonly CartItem[]
   customer: { firstName: string; lastName: string; phone: string }
   billing: BillingDetails
@@ -32,50 +50,36 @@ export interface OrderTotals {
   totalMinor: MinorAmount
 }
 
-/** Cotización calculada y persistida por el servidor; no reserva existencias. */
-export interface CheckoutQuote {
+export interface CustomerOrder {
   id: string
   ownerId: string
-  checkout: CheckoutInput
-  items: readonly OrderItemSnapshot[]
-  totals: OrderTotals
-  pricingPolicyVersion: string
-  commercePolicyVersion: string
-  expiresAt: Instant
-}
-
-interface OrderBase extends RecordMetadata {
-  id: string
-  number: string
-  ownerId: string
-  quoteId: string
-  customer: CheckoutInput['customer']
+  kind: OrderKind
+  status: OrderStatus
+  number: string | null
+  customer: OrderRequestInput['customer']
   billing: BillingDetails
   delivery: DeliverySelection
-  items: readonly OrderItemSnapshot[]
-  totals: OrderTotals
-  pricingPolicyVersion: string
-  commercePolicyVersion: string
-}
-
-export interface PurchaseOrder extends OrderBase {
-  kind: 'ORDER'
-  status: 'PENDING' | 'CONFIRMED' | 'PROCESSING' | 'READY' | 'COMPLETED' | 'CANCELLED'
-}
-
-export interface ReservationOrder extends OrderBase {
-  kind: 'RESERVATION'
-  status: 'RESERVED' | 'COMPLETED' | 'CANCELLED' | 'EXPIRED'
-  reservedUntil: Instant
-}
-
-export type CustomerOrder = PurchaseOrder | ReservationOrder
-
-/** Propuesta de retención ligada a un único pedido o reserva. */
-export interface StockCommitment {
-  orderId: string
-  items: readonly CartItem[]
-  status: 'ACTIVE' | 'RELEASED' | 'CONSUMED'
-  expiresAt: Instant | null
+  requestedItems: readonly CartItem[]
+  confirmedItems: readonly OrderItemSnapshot[]
+  totals: OrderTotals | null
+  adminNote: string
+  confirmedAt: Instant | null
+  reservedUntil: Instant | null
+  createdAt: Instant
   updatedAt: Instant
+  version: number
+}
+
+export type AdminOrderAction = 'CONFIRM' | 'REJECT' | 'CANCEL' | 'COMPLETE' | 'EXPIRE'
+
+export interface OrderService {
+  create(input: OrderRequestInput): Promise<CustomerOrder>
+  listMine(): Promise<CustomerOrder[]>
+  listAdmin(): Promise<CustomerOrder[]>
+  transition(input: {
+    orderId: string
+    expectedVersion: number
+    action: AdminOrderAction
+    note: string
+  }): Promise<CustomerOrder>
 }
