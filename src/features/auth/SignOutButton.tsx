@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router'
 import { runtime } from '../../app/services/runtime'
+import { Icon } from '../../shared/components/Icon'
 import { useAuth } from './auth.context'
 
 export function SignOutButton({ context = 'public' }: { context?: 'public' | 'admin' }) {
@@ -29,6 +30,7 @@ export function SignOutButton({ context = 'public' }: { context?: 'public' | 'ad
         disabled={pending}
         onClick={() => void signOut()}
       >
+        <Icon name="logout" />
         {pending ? 'Cerrando…' : 'Cerrar sesión'}
       </button>
       {error && <span className="signout-error" role="alert">{error}</span>}

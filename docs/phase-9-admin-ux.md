@@ -4,6 +4,8 @@
 
 Las vistas públicas muestran `Cerrar sesión` junto a la cuenta y el carrito. El panel administrativo muestra el correo activo y la misma acción en su encabezado. Al cerrar sesión se regresa al inicio de la tienda.
 
+La navegación y las acciones frecuentes usan un conjunto SVG local para identificar cuenta, carrito, solicitudes, catálogo e inventario sin descargar iconos externos ni agregar dependencias.
+
 La página `/cuenta` conserva también la acción, por lo que el usuario puede salir desde cualquier zona relacionada con su sesión.
 
 ## Inventario

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router'
 import { runtime } from '../../app/services/runtime'
+import { Icon } from '../../shared/components/Icon'
 import { useCatalog } from '../catalog/catalog.context'
 import type { InventorySummary } from './admin.models'
 
@@ -42,12 +43,12 @@ export function AdminDashboard() {
       {loading && <p role="status">Actualizando el resumen…</p>}
       {error && <p role="alert">No se pudo completar el resumen. {inventoryError || 'Revisa la conexión de Firebase.'}</p>}
       <div className="stat-grid">
-        <Link className="stat-card" to="/admin/productos"><span>Productos publicados</span><strong>{catalogLoading || catalogError ? '—' : products.length}</strong><span>Ver inventario por producto ↗</span></Link>
-        <div className="stat-card"><span>Stock físico</span><strong>{stockValue(inventory?.onHand)}</strong><span>Unidades registradas</span></div>
-        <div className="stat-card"><span>Comprometido</span><strong>{stockValue(inventory?.committed)}</strong><span>Pedidos y reservas confirmados</span></div>
-        <Link className="stat-card stat-card-primary" to="/admin/productos"><span>Disponible</span><strong>{stockValue(inventory?.available)}</strong><span>Unidades que puedes confirmar ↗</span></Link>
-        <Link className="stat-card" to="/admin/categorias"><span>Categorías publicadas</span><strong>{catalogLoading || catalogError ? '—' : categories.length}</strong><span>Administrar categorías ↗</span></Link>
-        <Link className="stat-card" to="/admin/solicitudes"><span>Operación comercial</span><strong>↗</strong><span>Revisar solicitudes</span></Link>
+        <Link className="stat-card" to="/admin/productos"><span className="stat-label"><Icon name="products" />Productos publicados</span><strong>{catalogLoading || catalogError ? '—' : products.length}</strong><span>Ver inventario por producto <Icon name="arrow-right" /></span></Link>
+        <div className="stat-card"><span className="stat-label"><Icon name="stock" />Stock físico</span><strong>{stockValue(inventory?.onHand)}</strong><span>Unidades registradas</span></div>
+        <div className="stat-card"><span className="stat-label"><Icon name="reserved" />Comprometido</span><strong>{stockValue(inventory?.committed)}</strong><span>Pedidos y reservas confirmados</span></div>
+        <Link className="stat-card stat-card-primary" to="/admin/productos"><span className="stat-label"><Icon name="available" />Disponible</span><strong>{stockValue(inventory?.available)}</strong><span>Unidades que puedes confirmar <Icon name="arrow-right" /></span></Link>
+        <Link className="stat-card" to="/admin/categorias"><span className="stat-label"><Icon name="categories" />Categorías publicadas</span><strong>{catalogLoading || catalogError ? '—' : categories.length}</strong><span>Administrar categorías <Icon name="arrow-right" /></span></Link>
+        <Link className="stat-card" to="/admin/solicitudes"><span className="stat-label"><Icon name="orders" />Operación comercial</span><strong><Icon className="stat-arrow" name="arrow-right" /></strong><span>Revisar solicitudes</span></Link>
       </div>
       <section className="admin-next">
         <h2>Cómo leer el inventario.</h2>

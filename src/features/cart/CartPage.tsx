@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router'
 import { EmptyState } from '../../shared/components/EmptyState'
+import { Icon } from '../../shared/components/Icon'
 import { formatMoney } from '../../shared/utils/formatMoney'
 import { useCatalog } from '../catalog/catalog.context'
 import { useCart } from './cart.context'
@@ -42,19 +43,19 @@ export function CartPage() {
                 <output aria-label="Cantidad">{item.quantity}</output>
                 <button aria-label={'Aumentar cantidad de '+(product?.name??'producto guardado')} disabled={item.quantity===MAX_QUANTITY} onClick={()=>quantity(item.productId,item.quantity+1)}>+</button>
               </div>
-              <button className="text-button" onClick={()=>{cart.remove(item.productId);setMessage('Producto retirado.')}}>Eliminar {product?.name??'producto'}</button>
+              <button className="text-button icon-action" onClick={()=>{cart.remove(item.productId);setMessage('Producto retirado.')}}><Icon name="trash" />Eliminar {product?.name??'producto'}</button>
             </div>
           </article>
         })}
         <p role="status">{message}</p>
-        {!confirmClear?<button className="text-button" onClick={()=>setConfirmClear(true)}>Vaciar carrito</button>:<div className="clear-cart"><p>¿Retirar todos los productos?</p><button onClick={()=>cart.clear()}>Sí, vaciar</button><button onClick={()=>setConfirmClear(false)}>Conservar carrito</button></div>}
+        {!confirmClear?<button className="text-button icon-action" onClick={()=>setConfirmClear(true)}><Icon name="trash" />Vaciar carrito</button>:<div className="clear-cart"><p>¿Retirar todos los productos?</p><button onClick={()=>cart.clear()}>Sí, vaciar</button><button onClick={()=>setConfirmClear(false)}>Conservar carrito</button></div>}
       </div>
       <aside className="cart-summary">
         <h2>Tu resumen</h2><p>{summary.quantity} unidades</p>
         <div className="summary-total"><span>Subtotal estimado</span><strong>{loading||error||summary.overflow?'—':formatMoney(summary.subtotalMinor)}</strong></div>
         <p>Entrega pendiente de definir. El precio unitario ya incluye el recargo de facturación.</p>
         {summary.overflow&&<p role="alert">No se puede calcular este importe. Revisa las cantidades.</p>}
-        {canContinue?<Link className="button" to="/checkout">Preparar pedido →</Link>:<p>Revisa los productos del carrito antes de continuar.</p>}
+        {canContinue?<Link className="button" to="/checkout">Preparar pedido <Icon name="arrow-right" /></Link>:<p>Revisa los productos del carrito antes de continuar.</p>}
         <Link className="text-link" to="/productos">Seguir explorando</Link>
       </aside>
     </div>

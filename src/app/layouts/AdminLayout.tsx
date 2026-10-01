@@ -2,6 +2,7 @@ import { NavLink, Outlet } from 'react-router'
 import { useAuth } from '../../features/auth/auth.context'
 import { SignOutButton } from '../../features/auth/SignOutButton'
 import { Brand } from '../../shared/components/Brand'
+import { Icon } from '../../shared/components/Icon'
 import { runtime } from '../services/runtime'
 
 export function AdminLayout() {
@@ -14,12 +15,12 @@ export function AdminLayout() {
         <Brand />
         <p className="eyebrow">Administración</p>
         <nav aria-label="Administración">
-          <NavLink to="/admin" end>Resumen</NavLink>
-          <NavLink to="/admin/productos">Productos</NavLink>
-          <NavLink to="/admin/categorias">Categorías</NavLink>
-          <NavLink to="/admin/solicitudes">Solicitudes</NavLink>
+          <NavLink to="/admin" end><Icon name="dashboard" />Resumen</NavLink>
+          <NavLink to="/admin/productos"><Icon name="products" />Productos</NavLink>
+          <NavLink to="/admin/categorias"><Icon name="categories" />Categorías</NavLink>
+          <NavLink to="/admin/solicitudes"><Icon name="orders" />Solicitudes</NavLink>
         </nav>
-        <NavLink className="back-link" to="/">← Volver a la tienda</NavLink>
+        <NavLink className="back-link nav-item" to="/"><Icon name="arrow-left" />Volver a la tienda</NavLink>
       </aside>
       <div className="admin-body">
         <header className="admin-header">

@@ -2,6 +2,7 @@ import { useEffect, useState, type FormEvent } from 'react'
 import { Link } from 'react-router'
 import { runtime } from '../../app/services/runtime'
 import { EmptyState } from '../../shared/components/EmptyState'
+import { Icon } from '../../shared/components/Icon'
 import { useAuth } from './auth.context'
 import type { UserProfile } from './auth.models'
 import { validateProfileInput } from './profile.logic'
@@ -136,9 +137,9 @@ export function AccountPage() {
         </fieldset>
       </form>
       <div className="account-actions">
-        <Link className="text-link" to="/mis-solicitudes">Ver mis solicitudes</Link>
-        {state.user.role === 'ADMIN' && <Link className="text-link" to="/admin">Ir a administración</Link>}
-        <button className="text-button" disabled={pending} onClick={() => void logout()}>Cerrar sesión</button>
+        <Link className="text-link icon-action" to="/mis-solicitudes"><Icon name="orders" />Ver mis solicitudes</Link>
+        {state.user.role === 'ADMIN' && <Link className="text-link icon-action" to="/admin"><Icon name="shield" />Ir a administración</Link>}
+        <button className="text-button icon-action" disabled={pending} onClick={() => void logout()}><Icon name="logout" />Cerrar sesión</button>
       </div>
     </div>
   )

@@ -5,6 +5,7 @@ import { useAuth } from '../../features/auth/auth.context'
 import { SignOutButton } from '../../features/auth/SignOutButton'
 import { useCart } from '../../features/cart/cart.context'
 import { Brand } from '../../shared/components/Brand'
+import { Icon } from '../../shared/components/Icon'
 import { runtime } from '../services/runtime'
 
 export function PublicLayout() {
@@ -20,14 +21,14 @@ export function PublicLayout() {
       <header className="site-header container">
         <Brand />
         <nav className="main-nav" aria-label="Navegación principal">
-          <NavLink to="/" end>Inicio</NavLink>
-          <NavLink to="/productos">Colección</NavLink>
+          <NavLink className="nav-item" to="/" end><Icon name="home" />Inicio</NavLink>
+          <NavLink className="nav-item" to="/productos"><Icon name="collection" />Colección</NavLink>
         </nav>
         <nav className="account-nav" aria-label="Tu cuenta y carrito">
-          {state.status === 'AUTHENTICATED' && <NavLink to="/mis-solicitudes">Solicitudes</NavLink>}
-          <NavLink to={state.status === 'AUTHENTICATED' ? '/cuenta' : '/login'}>Mi cuenta</NavLink>
+          {state.status === 'AUTHENTICATED' && <NavLink className="nav-item" to="/mis-solicitudes"><Icon name="orders" />Solicitudes</NavLink>}
+          <NavLink className="nav-item" to={state.status === 'AUTHENTICATED' ? '/cuenta' : '/login'}><Icon name="user" />Mi cuenta</NavLink>
           <SignOutButton />
-          <NavLink className="cart-link" to="/carrito">Carrito <span>{cart.ready ? quantity : '…'}</span></NavLink>
+          <NavLink className="cart-link nav-item" to="/carrito"><Icon name="cart" />Carrito <span className="cart-count">{cart.ready ? quantity : '…'}</span></NavLink>
         </nav>
       </header>
       <main id="contenido" className="public-main" tabIndex={-1}><Outlet /></main>
