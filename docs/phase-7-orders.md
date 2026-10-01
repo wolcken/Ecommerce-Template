@@ -98,4 +98,4 @@ Las reglas e índices se publican con:
 yarn firebase:deploy --only firestore:rules,firestore:indexes --project ecommerce-base-62b9c --non-interactive
 ```
 
-Siguiente bloque sugerido: perfil reutilizable del comprador, configuración real de recojo/envío, filtros de solicitudes y preparación del hosting.
+La fase 8 añadió el perfil reutilizable, la configuración de entrega, los filtros administrativos y la preparación local de Hosting.

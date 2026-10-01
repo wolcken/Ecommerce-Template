@@ -2,12 +2,14 @@ import { getApp, getApps, initializeApp } from 'firebase/app'
 import { connectAuthEmulator, getAuth } from 'firebase/auth'
 import { connectFirestoreEmulator, getFirestore } from 'firebase/firestore'
 import type { CatalogAdminService } from '../../features/admin/admin.models'
+import type { ProfileService } from '../../features/auth/auth.models'
 import type { OrderService } from '../../features/orders/order.models'
 import { createFirestoreAdminService } from '../../infrastructure/firebase/admin'
 import { createAuthService } from '../../infrastructure/firebase/auth'
 import { createCatalogService } from '../../infrastructure/firebase/catalog'
 import { readEnvironment } from '../../infrastructure/firebase/environment'
 import { createFirestoreOrderService } from '../../infrastructure/firebase/orders'
+import { createFirestoreProfileService } from '../../infrastructure/firebase/profile'
 import type { AuthService, CatalogService } from './contracts'
 
 type Runtime =
@@ -19,6 +21,7 @@ type Runtime =
       catalog: CatalogService
       admin: CatalogAdminService
       orders: OrderService
+      profile: ProfileService
     }
 
 function createRuntime(): Runtime {
@@ -49,6 +52,7 @@ function createRuntime(): Runtime {
       catalog: createCatalogService(db),
       admin: createFirestoreAdminService(db, currentUserId),
       orders: createFirestoreOrderService(db, currentUserId),
+      profile: createFirestoreProfileService(db, currentUserId),
     }
   } catch {
     return {

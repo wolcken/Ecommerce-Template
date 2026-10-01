@@ -1,3 +1,10 @@
+export interface PickupLocation {
+  id: string
+  name: string
+  address: string
+  instructions: string
+}
+
 export interface StoreConfig {
   name: string
   monogram: string
@@ -16,6 +23,12 @@ export interface StoreConfig {
   commerce: {
     ordersEnabled: boolean
     reservationsEnabled: boolean
+    reservationDurationHours: number
     deliveryMethods: readonly ('pickup' | 'shipping')[]
+    pickupLocations: readonly PickupLocation[]
+    shipping: {
+      flatRateMinor: number
+      notice: string
+    }
   }
 }

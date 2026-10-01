@@ -1,28 +1,74 @@
-import { useState, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router'
 import { runtime } from '../../app/services/runtime'
+import { storeConfig } from '../../config/store.config'
 import { EmptyState } from '../../shared/components/EmptyState'
 import { formatMoney } from '../../shared/utils/formatMoney'
 import { useAuth } from '../auth/auth.context'
+import type { UserProfile } from '../auth/auth.models'
 import { useCart } from '../cart/cart.context'
 import { cartSummary } from '../cart/cart.logic'
 import { useCatalog } from '../catalog/catalog.context'
 import { validateCheckoutDetails, type CheckoutDetails } from './checkout.logic'
 
+const firstPickup = storeConfig.commerce.pickupLocations[0]
+
 export function CheckoutPage() {
   const cart = useCart()
   const { products, loading, error } = useCatalog()
   const { state } = useAuth()
+  const uid = state.status === 'AUTHENTICATED' ? state.user.uid : null
   const navigate = useNavigate()
+  const [profile, setProfile] = useState<UserProfile | null>(null)
+  const [profileOwnerId, setProfileOwnerId] = useState<string | null>(null)
+  const profileLoading = uid !== null && profileOwnerId !== uid
   const [type, setType] = useState<'NIT' | 'CI'>('NIT')
   const [kind, setKind] = useState<'ORDER' | 'RESERVATION'>('ORDER')
-  const [delivery, setDelivery] = useState<'PICKUP' | 'SHIPPING'>('PICKUP')
+  const [delivery, setDelivery] = useState<'PICKUP' | 'SHIPPING'>(
+    storeConfig.commerce.deliveryMethods.includes('pickup') ? 'PICKUP' : 'SHIPPING',
+  )
+  const [pickupId, setPickupId] = useState(firstPickup?.id ?? '')
   const [shipping, setShipping] = useState({ recipient: '', phone: '', city: '', line1: '', notes: '' })
   const [details, setDetails] = useState<CheckoutDetails | null>(null)
   const [message, setMessage] = useState('')
   const [sending, setSending] = useState(false)
 
-  if (!cart.ready || loading) return <p className="service-status" role="status">Preparando el resumen…</p>
+  useEffect(() => {
+    if (!uid || runtime.mode !== 'firebase') return
+    let cancelled = false
+    runtime.profile
+      .getMine()
+      .then((value) => {
+        if (cancelled) return
+        setProfile(value)
+        setType(value?.billing?.documentType ?? 'NIT')
+        setShipping((current) => ({
+          ...current,
+          recipient: value ? `${value.firstName} ${value.lastName}`.trim() : '',
+          phone: value?.phone ?? '',
+        }))
+        setDetails(null)
+        setMessage('')
+      })
+      .catch((error) => {
+        if (!cancelled) {
+          setProfile(null)
+          setType('NIT')
+          setShipping((current) => ({ ...current, recipient: '', phone: '' }))
+          setMessage(error instanceof Error ? error.message : 'No se pudo cargar tu perfil.')
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setProfileOwnerId(uid)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [uid])
+
+  if (!cart.ready || loading || (uid && profileLoading)) {
+    return <p className="service-status" role="status">Preparando el resumen…</p>
+  }
   if (error) {
     return (
       <EmptyState
@@ -83,7 +129,7 @@ export function CheckoutPage() {
         billing: details.billing,
         delivery:
           delivery === 'PICKUP'
-            ? { method: 'PICKUP', locationId: 'main-store' }
+            ? { method: 'PICKUP', locationId: pickupId }
             : { method: 'SHIPPING', address: shipping },
       })
       cart.clear()
@@ -95,6 +141,8 @@ export function CheckoutPage() {
     }
   }
 
+  const pickup = storeConfig.commerce.pickupLocations.find((location) => location.id === pickupId)
+
   return (
     <div className="container page-section">
       <p className="eyebrow">Solicitud sin pago</p>
@@ -103,6 +151,7 @@ export function CheckoutPage() {
       <div className="cart-layout">
         <form
           className="checkout-form"
+          key={`${uid}:${profile?.version ?? 0}`}
           onSubmit={review}
           onChange={() => {
             setDetails(null)
@@ -110,11 +159,11 @@ export function CheckoutPage() {
           }}
         >
           <h2>Datos del comprador</h2>
-          <label>Nombre<input name="firstName" required maxLength={120} autoComplete="given-name" /></label>
-          <label>Apellidos<input name="lastName" required maxLength={120} autoComplete="family-name" /></label>
-          <label>Teléfono<input name="phone" type="tel" required maxLength={30} autoComplete="tel" /></label>
+          <label>Nombre<input name="firstName" required maxLength={120} defaultValue={profile?.firstName ?? ''} autoComplete="given-name" /></label>
+          <label>Apellidos<input name="lastName" required maxLength={120} defaultValue={profile?.lastName ?? ''} autoComplete="family-name" /></label>
+          <label>Teléfono<input name="phone" type="tel" required maxLength={30} defaultValue={profile?.phone ?? ''} autoComplete="tel" /></label>
           <h2>Datos de facturación</h2>
-          <label>Nombre o razón social<input name="billingName" required maxLength={200} /></label>
+          <label>Nombre o razón social<input name="billingName" required maxLength={200} defaultValue={profile?.billing?.name ?? ''} /></label>
           <label>
             Tipo de documento
             <select value={type} onChange={(event) => setType(event.target.value as 'NIT' | 'CI')}>
@@ -122,8 +171,8 @@ export function CheckoutPage() {
               <option value="CI">CI</option>
             </select>
           </label>
-          <label>Número de documento<input name="documentNumber" required maxLength={40} /></label>
-          {type === 'CI' && <label>Complemento (opcional)<input name="complement" maxLength={20} /></label>}
+          <label>Número de documento<input name="documentNumber" required maxLength={40} defaultValue={profile?.billing?.documentNumber ?? ''} /></label>
+          {type === 'CI' && <label>Complemento (opcional)<input name="complement" maxLength={20} defaultValue={profile?.billing?.documentComplement ?? ''} /></label>}
           {delivery === 'SHIPPING' && (
             <>
               <h2>Dirección de envío</h2>
@@ -136,6 +185,7 @@ export function CheckoutPage() {
           )}
           <button className="button">Revisar datos</button>
           <p role="status">{message}</p>
+          {state.status === 'AUTHENTICATED' && !profile && <p className="demo-caption">Puedes guardar estos datos en <Link className="text-link" to="/cuenta">tu perfil</Link> para futuros pedidos.</p>}
         </form>
         <aside className="cart-summary">
           <h2>Resumen de la solicitud</h2>
@@ -143,18 +193,30 @@ export function CheckoutPage() {
             Tipo
             <select value={kind} onChange={(event) => setKind(event.target.value as 'ORDER' | 'RESERVATION')}>
               <option value="ORDER">Pedido</option>
-              <option value="RESERVATION">Reserva de 24 horas</option>
+              <option value="RESERVATION">Reserva de {storeConfig.commerce.reservationDurationHours} horas</option>
             </select>
           </label>
           <label>
             Entrega
             <select value={delivery} onChange={(event) => { setDelivery(event.target.value as 'PICKUP' | 'SHIPPING'); setDetails(null) }}>
-              <option value="PICKUP">Recojo en tienda</option>
-              <option value="SHIPPING">Envío</option>
+              {storeConfig.commerce.deliveryMethods.includes('pickup') && <option value="PICKUP">Recojo en tienda</option>}
+              {storeConfig.commerce.deliveryMethods.includes('shipping') && <option value="SHIPPING">Envío</option>}
             </select>
           </label>
-          <p>{kind === 'RESERVATION' ? 'Las 24 horas comienzan cuando el ADMIN confirma.' : 'El ADMIN confirmará disponibilidad y precio.'}</p>
-          <p>{delivery === 'SHIPPING' ? 'El costo de envío se coordina al confirmar y por ahora figura en Bs 0.' : 'La ubicación de recojo se informará al confirmar.'}</p>
+          {delivery === 'PICKUP' ? (
+            <>
+              <label>
+                Punto de recojo
+                <select value={pickupId} onChange={(event) => setPickupId(event.target.value)}>
+                  {storeConfig.commerce.pickupLocations.map((location) => <option key={location.id} value={location.id}>{location.name}</option>)}
+                </select>
+              </label>
+              {pickup && <p>{pickup.address}. {pickup.instructions}</p>}
+            </>
+          ) : (
+            <p>{storeConfig.commerce.shipping.notice} Tarifa base: {formatMoney(storeConfig.commerce.shipping.flatRateMinor)}.</p>
+          )}
+          <p>{kind === 'RESERVATION' ? `Las ${storeConfig.commerce.reservationDurationHours} horas comienzan cuando el ADMIN confirma.` : 'El ADMIN confirmará disponibilidad y precio.'}</p>
           {cart.items.map((item) => <p key={item.productId}>{products.find((product) => product.id === item.productId)?.name} × {item.quantity}</p>)}
           <div className="summary-total"><span>Referencia del carrito</span><strong>{formatMoney(summary.subtotalMinor)}</strong></div>
           {details && (

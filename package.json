@@ -11,12 +11,14 @@
     "typecheck": "tsc -p tsconfig.app.json --noEmit && tsc -p tsconfig.node.json --noEmit",
     "test": "node --test tests/*.test.mjs",
     "test:integration": "node scripts/run-emulators.mjs",
+    "test:hosting": "yarn build && node scripts/run-hosting-test.mjs",
     "emulators": "node scripts/run-emulators.mjs --start",
     "dev:emulator": "node scripts/dev-emulator.mjs",
     "firebase:check": "node scripts/check-firebase.mjs",
     "firebase:admin": "node --use-system-ca scripts/admin-role.mjs",
     "firebase:smoke": "node --use-system-ca scripts/check-live-rules.mjs",
-    "firebase:deploy": "node --use-system-ca node_modules/firebase-tools/lib/bin/firebase.js deploy"
+    "firebase:deploy": "node --use-system-ca node_modules/firebase-tools/lib/bin/firebase.js deploy",
+    "firebase:deploy:hosting": "yarn build && node --use-system-ca node_modules/firebase-tools/lib/bin/firebase.js deploy --only hosting --non-interactive"
   },
   "dependencies": {
     "firebase": "^12.19.0",

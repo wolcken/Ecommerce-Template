@@ -24,7 +24,7 @@ export function PublicLayout() {
         </nav>
         <nav className="account-nav" aria-label="Tu cuenta y carrito">
           {state.status === 'AUTHENTICATED' && <NavLink to="/mis-solicitudes">Solicitudes</NavLink>}
-          <NavLink to="/login">Mi cuenta</NavLink>
+          <NavLink to={state.status === 'AUTHENTICATED' ? '/cuenta' : '/login'}>Mi cuenta</NavLink>
           <NavLink className="cart-link" to="/carrito">Carrito <span>{cart.ready ? quantity : '…'}</span></NavLink>
         </nav>
       </header>

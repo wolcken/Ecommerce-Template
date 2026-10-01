@@ -1,3 +1,4 @@
+import {createFirestoreProfileService} from '../src/infrastructure/firebase/profile.ts'
 import {createFirestoreOrderService} from '../src/infrastructure/firebase/orders.ts'
 import {createFirestoreAdminService} from '../src/infrastructure/firebase/admin.ts'
 import test,{before,after} from 'node:test'
@@ -96,6 +97,21 @@ test('Spark admin adapter saves and lists a calculated product without Functions
  assert.equal((await getDoc(doc(db,'products','adapter-laptop'))).data().costMinor,undefined)
 })
 
+
+test('profile is reusable and isolated to its authenticated owner',async()=>{
+ const customerDb=environment.authenticatedContext('customer').firestore()
+ const profiles=createFirestoreProfileService(customerDb,()=> 'customer')
+ const created=await profiles.saveMine({firstName:'Ana',lastName:'Pérez',phone:'70000000',billing:null},null)
+ assert.equal(created.version,1)
+ assert.equal((await profiles.getMine()).firstName,'Ana')
+ const otherDb=environment.authenticatedContext('other').firestore()
+ await assertFails(getDoc(doc(otherDb,'profiles','customer')))
+ await assertFails(setDoc(doc(otherDb,'profiles','customer'),{firstName:'Intruso'},{merge:true}))
+ await assertFails(setDoc(doc(customerDb,'profiles','customer'),{role:'ADMIN'},{merge:true}))
+ const updated=await profiles.saveMine({firstName:'Ana',lastName:'Pérez',phone:'70000001',billing:{name:'Ana Pérez',documentType:'NIT',documentNumber:'00123',documentComplement:null}},1)
+ assert.equal(updated.version,2)
+ assert.equal(updated.billing.documentNumber,'00123')
+})
 test('customer submits a request and ADMIN commits then releases stock',async()=>{
  const customerDb=environment.authenticatedContext('customer').firestore()
  const customerOrders=createFirestoreOrderService(customerDb,()=> 'customer')

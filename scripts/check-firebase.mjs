@@ -34,7 +34,7 @@ check(env.VITE_USE_FIREBASE_EMULATORS !== 'true', 'Emuladores desactivados para 
 const firebaseConfig = JSON.parse(readFileSync(path.join(root, 'firebase.json'), 'utf8'))
 check(
   !firebaseConfig.functions && !firebaseConfig.storage,
-  'Configuración limitada a Firestore en el plan Spark.',
+  'Configuración Spark sin Functions ni Storage.',
 )
 
 const versioned = spawnSync('git', ['ls-files', '--', '.env', '.env.*'], {

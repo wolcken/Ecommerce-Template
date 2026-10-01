@@ -15,7 +15,7 @@ try {
     getDocs(query(collection(db,'products'),where('active','==',true),limit(1))),
     getDocs(query(collection(db,'categories'),where('active','==',true),limit(1))),
   ])
-  let privateDenied=false, privateCode='none', ordersDenied=false, ordersCode='none'
+  let privateDenied=false, privateCode='none', ordersDenied=false, ordersCode='none', profileDenied=false, profileCode='none'
   try { await getDoc(doc(db,'productPricing','rules-probe')) }
   catch(error) {
     privateCode=typeof error==='object' && error!==null && 'code' in error ? String(error.code) : 'unknown'
@@ -28,7 +28,13 @@ try {
     ordersDenied=ordersCode==='permission-denied' || ordersCode==='firestore/permission-denied'
   }
   if(!ordersDenied) throw new Error('Las solicitudes no rechazaron la lectura anónima. Código: '+ordersCode)
-  console.log(JSON.stringify({project:environment.config.projectId,activeProductSample:products.size,activeCategorySample:categories.size,privateReadDenied:true,anonymousOrderReadDenied:true},null,2))
+  try { await getDoc(doc(db,'profiles','rules-probe')) }
+  catch(error) {
+    profileCode=typeof error==='object' && error!==null && 'code' in error ? String(error.code) : 'unknown'
+    profileDenied=profileCode==='permission-denied' || profileCode==='firestore/permission-denied'
+  }
+  if(!profileDenied) throw new Error('Los perfiles no rechazaron la lectura anónima. Código: '+profileCode)
+  console.log(JSON.stringify({project:environment.config.projectId,activeProductSample:products.size,activeCategorySample:categories.size,privateReadDenied:true,anonymousOrderReadDenied:true,anonymousProfileReadDenied:true},null,2))
 } finally {
   await terminate(db)
   await deleteApp(app)

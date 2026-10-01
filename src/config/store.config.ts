@@ -17,6 +17,19 @@ export const storeConfig = {
   commerce: {
     ordersEnabled: true,
     reservationsEnabled: true,
+    reservationDurationHours: 24,
     deliveryMethods: ['pickup', 'shipping'],
+    pickupLocations: [
+      {
+        id: 'main-store',
+        name: 'Tienda principal',
+        address: 'Dirección por configurar',
+        instructions: 'Horario de recojo por coordinar.',
+      },
+    ],
+    shipping: {
+      flatRateMinor: 0,
+      notice: 'La cobertura y el horario se coordinan al confirmar.',
+    },
   },
 } satisfies StoreConfig

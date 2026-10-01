@@ -2,7 +2,6 @@ import type { RecordMetadata } from '../../shared/types/domain'
 
 export type UserRole = 'USER' | 'ADMIN'
 
-/** Sesión derivada del proveedor y sus claims verificados; no de localStorage. */
 export interface SessionUser {
   uid: string
   email: string | null
@@ -18,7 +17,6 @@ export type AuthState =
 export interface BillingDetails {
   name: string
   documentType: 'NIT' | 'CI'
-  /** Texto para preservar ceros y complementos; validación por definir. */
   documentNumber: string
   documentComplement: string | null
 }
@@ -30,7 +28,11 @@ export interface ProfileInput {
   billing: BillingDetails | null
 }
 
-/** Sin rol editable; el correo de acceso pertenece a Authentication. */
 export interface UserProfile extends ProfileInput, RecordMetadata {
   uid: string
+}
+
+export interface ProfileService {
+  getMine(): Promise<UserProfile | null>
+  saveMine(input: ProfileInput, expectedVersion: number | null): Promise<UserProfile>
 }

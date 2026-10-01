@@ -2,6 +2,7 @@ import { Route, Routes } from 'react-router'
 import { AdminEditor } from '../features/admin/AdminEditor'
 import { AdminOrdersPage } from '../features/admin/AdminOrdersPage'
 import { AdminDashboard } from '../features/admin/AdminPages'
+import { AccountPage } from '../features/auth/AccountPage'
 import { AuthPage } from '../features/auth/AuthPage'
 import { RequireAdmin } from '../features/auth/RequireAdmin'
 import { CartPage } from '../features/cart/CartPage'
@@ -25,6 +26,7 @@ export function AppRoutes() {
         <Route path="categorias/:slug" element={<CatalogBoundary><CatalogPage /></CatalogBoundary>} />
         <Route path="carrito" element={<CartPage />} />
         <Route path="checkout" element={<CheckoutPage />} />
+        <Route path="cuenta" element={<AccountPage />} />
         <Route path="mis-solicitudes" element={<OrderHistoryPage />} />
         <Route path="login" element={<AuthPage key="login" mode="login" />} />
         <Route path="recuperar-acceso" element={<AuthPage key="reset" mode="reset" />} />

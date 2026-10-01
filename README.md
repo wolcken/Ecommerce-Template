@@ -14,6 +14,7 @@ yarn lint
 yarn typecheck
 yarn test
 yarn test:integration
+yarn test:hosting
 yarn build
 ```
 
@@ -22,8 +23,8 @@ yarn build
 La aplicación usa Firebase Authentication y una única base Firestore. No despliega Cloud Functions ni Firebase Storage y no requiere asociar una cuenta de facturación.
 
 - Visitantes: catálogo activo y carrito local.
-- USER: acceso, envío de pedidos/reservas y consulta de sus solicitudes.
-- ADMIN: catálogo, revisión de solicitudes e inventario mediante transacciones Firestore.
+- USER: perfil privado, envío de pedidos/reservas y consulta de sus solicitudes.
+- ADMIN: catálogo, filtros de solicitudes e inventario mediante transacciones Firestore.
 - Reglas: solo ADMIN escribe catálogo; costos e inventario nunca son públicos.
 - Imágenes: URL HTTPS pública opcional. La aplicación no sube archivos.
 - Checkout: solicitud persistida sin aceptar precios del navegador; el ADMIN recalcula y confirma manualmente.
@@ -77,6 +78,7 @@ yarn dev:emulator
 - /productos/:slug — detalle
 - /carrito — carrito persistente en el navegador
 - /checkout — envío autenticado de pedido o reserva
+- /cuenta — perfil privado y datos reutilizables
 - /mis-solicitudes — historial privado del cliente
 - /login, /registro y /recuperar-acceso — autenticación
 - /admin, /admin/productos, /admin/categorias y /admin/solicitudes — administración protegida
@@ -86,7 +88,7 @@ Configurar el hosting de la SPA para devolver index.html en rutas internas.
 
 ## Personalización
 
-- src/config/store.config.ts: nombre, descripción, moneda y tema.
+- src/config/store.config.ts: marca, contacto, recojo, envío, reservas y tema.
 - src/features/catalog: catálogo público.
 - src/features/admin: administración.
 - src/features/cart: carrito local por visitante/cuenta.
@@ -102,5 +104,6 @@ Configurar el hosting de la SPA para devolver index.html en rutas internas.
 - [Carrito y borrador](docs/phase-5-cart.md)
 - [Arquitectura Spark](docs/phase-6-readiness.md)
 - [Pedidos, reservas e inventario](docs/phase-7-orders.md)
+- [Perfil, entrega y preparación de Hosting](docs/phase-8-profile-hosting.md)
 
-Siguiente bloque: perfil reutilizable del comprador, configuración real de recojo/envío, filtros administrativos y preparación del hosting.
+Siguiente bloque: reemplazar los datos provisionales de tienda, cargar un catálogo controlado, probar los flujos reales USER/ADMIN y revisar la publicación de Hosting.

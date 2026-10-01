@@ -76,7 +76,16 @@ service cloud.firestore {
         && (data.documentComplement == null
           || (data.documentComplement is string && data.documentComplement.size() <= 20));
     }
-    function deliveryShape(data) {
+    function profileShape(data) {
+      return data.keys().hasAll(['firstName','lastName','phone','billing','version','createdAt','updatedAt'])
+        && data.keys().hasOnly(['firstName','lastName','phone','billing','version','createdAt','updatedAt'])
+        && data.firstName is string && data.firstName.size() > 0 && data.firstName.size() <= 120
+        && data.lastName is string && data.lastName.size() > 0 && data.lastName.size() <= 120
+        && data.phone is string && data.phone.size() > 0 && data.phone.size() <= 30
+        && (data.billing == null || billingShape(data.billing))
+        && data.version is int && data.version > 0
+        && data.createdAt is timestamp && data.updatedAt is timestamp;
+    }    function deliveryShape(data) {
       return data is map
         && ((data.method == 'PICKUP'
           && data.keys().hasAll(['method','locationId'])
@@ -177,7 +186,18 @@ service cloud.firestore {
         && request.resource.data.version == resource.data.version + 1;
       allow delete: if false;
     }
-    match /orders/{id} {
+    match /profiles/{uid} {
+      allow read: if isSignedIn() && request.auth.uid == uid;
+      allow create: if isSignedIn() && request.auth.uid == uid && profileShape(request.resource.data)
+        && request.resource.data.version == 1
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.updatedAt == request.time;
+      allow update: if isSignedIn() && request.auth.uid == uid && profileShape(request.resource.data)
+        && request.resource.data.version == resource.data.version + 1
+        && request.resource.data.createdAt == resource.data.createdAt
+        && request.resource.data.updatedAt == request.time;
+      allow delete: if false;
+    }    match /orders/{id} {
       allow read: if isAdmin() || (isSignedIn() && resource.data.ownerId == request.auth.uid);
       allow create: if isSignedIn() && orderShape(request.resource.data)
         && request.resource.data.ownerId == request.auth.uid

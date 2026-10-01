@@ -1,4 +1,4 @@
-import type { AuthState, ProfileInput, UserProfile } from '../../features/auth/auth.models'
+import type { AuthState } from '../../features/auth/auth.models'
 import type { CartItem, CustomerCart } from '../../features/cart/cart.models'
 import type {
   CategoryRecord,
@@ -15,11 +15,6 @@ export interface AuthService {
   register(email: string, password: string): Promise<Result<void>>
   signOut(): Promise<Result<void>>
   requestPasswordReset(email: string): Promise<Result<void>>
-}
-
-export interface ProfileService {
-  getMine(): Promise<Result<UserProfile | null>>
-  saveMine(input: ProfileInput, expectedVersion: number | null): Promise<Result<UserProfile>>
 }
 
 export interface CatalogService {

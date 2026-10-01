@@ -15,7 +15,8 @@ export function OrderHistoryPage() {
   const { state } = useAuth()
   const uid = state.status === 'AUTHENTICATED' ? state.user.uid : null
   const [orders, setOrders] = useState<CustomerOrder[]>([])
-  const [loading, setLoading] = useState(false)
+  const [ordersOwnerId, setOrdersOwnerId] = useState<string | null>(null)
+  const loading = uid !== null && ordersOwnerId !== uid
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
@@ -30,10 +31,13 @@ export function OrderHistoryPage() {
         }
       })
       .catch((error) => {
-        if (!cancelled) setError(error instanceof Error ? error.message : 'No se pudieron cargar tus solicitudes.')
+        if (!cancelled) {
+          setOrders([])
+          setError(error instanceof Error ? error.message : 'No se pudieron cargar tus solicitudes.')
+        }
       })
       .finally(() => {
-        if (!cancelled) setLoading(false)
+        if (!cancelled) setOrdersOwnerId(uid)
       })
     return () => {
       cancelled = true
@@ -80,7 +84,7 @@ export function OrderHistoryPage() {
         />
       )}
       <div className="order-list">
-        {orders.map((order) => (
+        {!loading && orders.map((order) => (
           <article className="order-card" key={order.id}>
             <header>
               <div>

@@ -15,6 +15,7 @@ import {
   type DocumentSnapshot,
   type Firestore,
 } from 'firebase/firestore'
+import { storeConfig } from '../../config/store.config.ts'
 import { calculatePrice } from '../../features/pricing/calculatePrice.ts'
 import { validateOrderRequest } from '../../features/orders/order.logic.ts'
 import type {
@@ -26,7 +27,7 @@ import type {
 } from '../../features/orders/order.models'
 
 const PAGE_SIZE = 100
-const RESERVATION_DURATION_MS = 24 * 60 * 60 * 1000
+const RESERVATION_DURATION_MS = storeConfig.commerce.reservationDurationHours * 60 * 60 * 1000
 
 function failure(error: unknown): Error {
   if (error instanceof Error && !('code' in error)) return error
@@ -314,6 +315,11 @@ export function createFirestoreOrderService(
         }
       })
 
+      const shippingMinor = order.delivery.method === 'SHIPPING' ? storeConfig.commerce.shipping.flatRateMinor : 0
+      const totalMinor = itemsMinor + shippingMinor
+      if (!Number.isSafeInteger(shippingMinor) || shippingMinor < 0 || !Number.isSafeInteger(totalMinor)) {
+        throw new Error('La tarifa de envío configurada no es válida.')
+      }
       const now = Timestamp.now()
       const reservedUntil =
         order.kind === 'RESERVATION'
@@ -350,8 +356,8 @@ export function createFirestoreOrderService(
         totals: {
           currency: 'BOB',
           itemsMinor,
-          shippingMinor: 0,
-          totalMinor: itemsMinor,
+          shippingMinor,
+          totalMinor,
         },
         adminNote: note,
         confirmedAt: now,
