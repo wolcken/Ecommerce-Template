@@ -4,7 +4,13 @@ import { runtime } from '../../app/services/runtime'
 import { Icon } from '../../shared/components/Icon'
 import { useAuth } from './auth.context'
 
-export function SignOutButton({ context = 'public' }: { context?: 'public' | 'admin' }) {
+export function SignOutButton({
+  context = 'public',
+  onSignedOut,
+}: {
+  context?: 'public' | 'admin'
+  onSignedOut?: () => void
+}) {
   const { state } = useAuth()
   const navigate = useNavigate()
   const [pending, setPending] = useState(false)
@@ -17,8 +23,10 @@ export function SignOutButton({ context = 'public' }: { context?: 'public' | 'ad
     setPending(true)
     setError('')
     const result = await runtime.auth.signOut()
-    if (result.ok) navigate('/', { replace: true })
-    else setError(result.error.message)
+    if (result.ok) {
+      onSignedOut?.()
+      navigate('/', { replace: true })
+    } else setError(result.error.message)
     setPending(false)
   }
 

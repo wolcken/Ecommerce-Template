@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from 'react'
 import { NavLink, Outlet } from 'react-router'
 import { storeConfig } from '../../config/store.config'
 import type { StoreConfig } from '../../config/store.types'
@@ -13,6 +14,32 @@ export function PublicLayout() {
   const { state } = useAuth()
   const quantity = cart.items.reduce((sum, item) => sum + item.quantity, 0)
   const config: StoreConfig = storeConfig
+  const [accountMenuOpen, setAccountMenuOpen] = useState(false)
+  const accountMenuRef = useRef<HTMLDivElement>(null)
+  const menuButtonRef = useRef<HTMLButtonElement>(null)
+
+  useEffect(() => {
+    if (!accountMenuOpen) return
+
+    function closeOnPointerDown(event: PointerEvent) {
+      if (event.target instanceof Node && !accountMenuRef.current?.contains(event.target)) {
+        setAccountMenuOpen(false)
+      }
+    }
+
+    function closeOnEscape(event: KeyboardEvent) {
+      if (event.key !== 'Escape') return
+      setAccountMenuOpen(false)
+      menuButtonRef.current?.focus()
+    }
+
+    document.addEventListener('pointerdown', closeOnPointerDown)
+    document.addEventListener('keydown', closeOnEscape)
+    return () => {
+      document.removeEventListener('pointerdown', closeOnPointerDown)
+      document.removeEventListener('keydown', closeOnEscape)
+    }
+  }, [accountMenuOpen])
 
   return (
     <>
@@ -24,12 +51,26 @@ export function PublicLayout() {
           <NavLink className="nav-item" to="/" end><Icon name="home" />Inicio</NavLink>
           <NavLink className="nav-item" to="/productos"><Icon name="collection" />Colección</NavLink>
         </nav>
-        <nav className="account-nav" aria-label="Tu cuenta y carrito">
-          {state.status === 'AUTHENTICATED' && <NavLink className="nav-item" to="/mis-solicitudes"><Icon name="orders" />Solicitudes</NavLink>}
-          <NavLink className="nav-item" to={state.status === 'AUTHENTICATED' ? '/cuenta' : '/login'}><Icon name="user" />Mi cuenta</NavLink>
-          <SignOutButton />
-          <NavLink className="cart-link nav-item" to="/carrito"><Icon name="cart" />Carrito <span className="cart-count">{cart.ready ? quantity : '…'}</span></NavLink>
-        </nav>
+        <div className={`account-menu${accountMenuOpen ? ' account-menu-open' : ''}`} ref={accountMenuRef}>
+          <button
+            aria-controls="account-navigation"
+            aria-expanded={accountMenuOpen}
+            aria-label={accountMenuOpen ? 'Cerrar menú de cuenta' : 'Abrir menú de cuenta'}
+            className="mobile-menu-button"
+            onClick={() => setAccountMenuOpen((open) => !open)}
+            ref={menuButtonRef}
+            type="button"
+          >
+            <Icon name={accountMenuOpen ? 'close' : 'menu'} />
+            <span>Menú</span>
+          </button>
+          <nav className="account-nav" id="account-navigation" aria-label="Tu cuenta y carrito">
+            {state.status === 'AUTHENTICATED' && <NavLink className="nav-item" onClick={() => setAccountMenuOpen(false)} to="/mis-solicitudes"><Icon name="orders" />Solicitudes</NavLink>}
+            <NavLink className="nav-item" onClick={() => setAccountMenuOpen(false)} to={state.status === 'AUTHENTICATED' ? '/cuenta' : '/login'}><Icon name="user" />Mi cuenta</NavLink>
+            <NavLink className="cart-link nav-item" onClick={() => setAccountMenuOpen(false)} to="/carrito"><Icon name="cart" />Carrito <span className="cart-count">{cart.ready ? quantity : '…'}</span></NavLink>
+            <SignOutButton onSignedOut={() => setAccountMenuOpen(false)} />
+          </nav>
+        </div>
       </header>
       <main id="contenido" className="public-main" tabIndex={-1}><Outlet /></main>
       <footer className="site-footer">
