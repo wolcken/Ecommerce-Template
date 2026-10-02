@@ -7,7 +7,14 @@ export const storeConfig = {
   description: 'Una selección de objetos útiles, simples y hechos para acompañarte cada día.',
   locale: 'es-BO',
   currency: 'BOB',
-  contact: {},
+  contact: { email: '', phone: '' },
+  company: {
+    legalName: 'Razón social por configurar',
+    taxId: 'NIT por configurar',
+    activity: 'Actividad económica por configurar',
+    address: 'Dirección por configurar',
+    city: 'Ciudad por configurar',
+  },
   theme: {
     accent: '#245646',
     'accent-hover': '#173e32',

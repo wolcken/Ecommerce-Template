@@ -11,6 +11,7 @@ import { CatalogPage } from '../features/catalog/pages/CatalogPage'
 import { HomePage } from '../features/catalog/pages/HomePage'
 import { ProductPage } from '../features/catalog/pages/ProductPage'
 import { CheckoutPage } from '../features/orders/CheckoutPage'
+import { InvoicePage } from '../features/orders/InvoicePage'
 import { OrderHistoryPage } from '../features/orders/OrderHistoryPage'
 import { NotFoundPage } from '../shared/components/NotFoundPage'
 import { AdminLayout } from './layouts/AdminLayout'
@@ -28,6 +29,7 @@ export function AppRoutes() {
         <Route path="checkout" element={<CheckoutPage />} />
         <Route path="cuenta" element={<AccountPage />} />
         <Route path="mis-solicitudes" element={<OrderHistoryPage />} />
+        <Route path="mis-solicitudes/:orderId/factura" element={<InvoicePage />} />
         <Route path="login" element={<AuthPage key="login" mode="login" />} />
         <Route path="recuperar-acceso" element={<AuthPage key="reset" mode="reset" />} />
         <Route path="registro" element={<AuthPage key="register" mode="register" />} />

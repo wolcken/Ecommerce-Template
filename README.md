@@ -106,5 +106,6 @@ Configurar el hosting de la SPA para devolver index.html en rutas internas.
 - [Pedidos, reservas e inventario](docs/phase-7-orders.md)
 - [Perfil, entrega y preparación de Hosting](docs/phase-8-profile-hosting.md)
 - [Sesión visible e inventario administrativo](docs/phase-9-admin-ux.md)
+- [Navegación y factura simulada](docs/phase-10-invoice-ux.md)
 
-Siguiente bloque: reemplazar los datos provisionales de tienda, completar el catálogo y revisar la experiencia visual del flujo USER/ADMIN antes de publicar Hosting.
+Siguiente bloque: reemplazar los datos provisionales de empresa y tienda, revisar la factura simulada con datos reales y optimizar la carga inicial antes de publicar Hosting.

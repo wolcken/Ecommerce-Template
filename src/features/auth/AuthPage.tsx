@@ -1,13 +1,25 @@
-import { useState, type FormEvent } from 'react'
-import { Link } from 'react-router'
+import { useEffect, useState, type FormEvent } from 'react'
+import { Link, useLocation, useNavigate } from 'react-router'
 import { runtime } from '../../app/services/runtime'
 import { EmptyState } from '../../shared/components/EmptyState'
 import { useAuth } from './auth.context'
+import { postAuthDestination } from './auth.navigation'
 
 export function AuthPage({ mode }: { mode: 'login' | 'register' | 'reset' }) {
   const { state, error } = useAuth()
+  const location = useLocation()
+  const navigate = useNavigate()
   const [pending, setPending] = useState(false)
   const [feedback, setFeedback] = useState('')
+  const role = state.status === 'AUTHENTICATED' ? state.user.role : null
+  const requestedPath = typeof location.state === 'object' && location.state !== null && 'from' in location.state
+    ? String(location.state.from)
+    : null
+
+  useEffect(() => {
+    if (!role) return
+    navigate(postAuthDestination(role, requestedPath), { replace: true })
+  }, [navigate, requestedPath, role])
 
   if (runtime.mode !== 'firebase') {
     return <EmptyState title="Tu cuenta requiere Firebase." description="Puedes seguir explorando el catálogo de demostración." />
@@ -45,15 +57,7 @@ export function AuthPage({ mode }: { mode: 'login' | 'register' | 'reset' }) {
   if (error) return <EmptyState title="No se pudo verificar tu sesión." description={error} />
   if (state.status === 'LOADING') return <p className="service-status" role="status">Verificando sesión…</p>
   if (state.status === 'AUTHENTICATED') {
-    return (
-      <section className="auth-panel">
-        <p className="eyebrow">Mi cuenta</p>
-        <h1>Ya estás dentro.</h1>
-        <p>{state.user.email}</p>
-        <Link className="button" to="/cuenta">Completar mi perfil</Link>
-        {state.user.role === 'ADMIN' && <Link className="button secondary-button" to="/admin">Ir a administración</Link>}
-      </section>
-    )
+    return <p className="service-status" role="status">Abriendo tu espacio…</p>
   }
 
   return (

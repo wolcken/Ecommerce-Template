@@ -14,6 +14,13 @@ export interface StoreConfig {
   currency: string
   logoUrl?: string
   contact: { email?: string; phone?: string }
+  company: {
+    legalName: string
+    taxId: string
+    activity: string
+    address: string
+    city: string
+  }
   theme: {
     accent: string
     'accent-hover': string

@@ -11,7 +11,9 @@ export type IconName =
   | 'home'
   | 'logout'
   | 'orders'
+  | 'printer'
   | 'products'
+  | 'receipt'
   | 'reserved'
   | 'shield'
   | 'stock'
@@ -29,7 +31,9 @@ const drawings: Record<IconName, ReactNode> = {
   home: <><path d="m3 11 9-8 9 8"/><path d="M5 10v10h14V10"/><path d="M9 20v-6h6v6"/></>,
   logout: <><path d="M10 4H5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h5"/><path d="M14 8l4 4-4 4"/><path d="M18 12H8"/></>,
   orders: <><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4.5V3h6v1.5"/><path d="M8.5 10h7"/><path d="M8.5 14h7"/><path d="M8.5 18h4"/></>,
+  printer: <><path d="M7 8V3h10v5"/><rect x="5" y="14" width="14" height="7" rx="1"/><path d="M5 17H3V9h18v8h-2"/><path d="M17 11h.01"/></>,
   products: <><path d="m4 7 8-4 8 4-8 4-8-4Z"/><path d="M4 7v10l8 4 8-4V7"/><path d="M12 11v10"/></>,
+  receipt: <><path d="M6 3h12v18l-3-2-3 2-3-2-3 2V3Z"/><path d="M9 8h6M9 12h6M9 16h3"/></>,
   reserved: <><rect x="4" y="7" width="16" height="13" rx="2"/><path d="M8 7V5a4 4 0 0 1 8 0v2"/><path d="M12 12v3"/></>,
   shield: <><path d="M12 3 5 6v5c0 4.6 2.8 8.1 7 10 4.2-1.9 7-5.4 7-10V6l-7-3Z"/><path d="m9 12 2 2 4-4"/></>,
   stock: <><path d="M4 8h16v12H4z"/><path d="m3 8 2-4h14l2 4"/><path d="M9 12h6"/></>,

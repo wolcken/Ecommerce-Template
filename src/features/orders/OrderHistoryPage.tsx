@@ -2,8 +2,10 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router'
 import { runtime } from '../../app/services/runtime'
 import { EmptyState } from '../../shared/components/EmptyState'
+import { Icon } from '../../shared/components/Icon'
 import { formatMoney } from '../../shared/utils/formatMoney'
 import { useAuth } from '../auth/auth.context'
+import { canGenerateInvoice } from './invoice.logic'
 import { orderStatusLabel } from './order.logic'
 import type { CustomerOrder } from './order.models'
 
@@ -108,6 +110,11 @@ export function OrderHistoryPage() {
             )}
             {order.reservedUntil && <p>Reserva válida hasta {date(order.reservedUntil)}.</p>}
             {order.adminNote && <p className="order-note">Nota de la tienda: {order.adminNote}</p>}
+            {canGenerateInvoice(order) && (
+              <Link className="button invoice-link" to={`/mis-solicitudes/${order.id}/factura`}>
+                <Icon name="receipt" />Ver factura simulada
+              </Link>
+            )}
           </article>
         ))}
       </div>
