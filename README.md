@@ -20,13 +20,13 @@ yarn build
 
 ## Arquitectura Spark
 
-La aplicación usa Firebase Authentication y una única base Firestore. No despliega Cloud Functions ni Firebase Storage y no requiere asociar una cuenta de facturación.
+La aplicación usa Firebase Authentication, una única base Firestore y Cloudinary para imágenes públicas. No despliega Cloud Functions ni Firebase Storage y no requiere asociar una cuenta de facturación de Firebase.
 
 - Visitantes: catálogo activo y carrito local.
 - USER: perfil privado, envío de pedidos/reservas y consulta de sus solicitudes.
 - ADMIN: catálogo, filtros de solicitudes e inventario mediante transacciones Firestore.
 - Reglas: solo ADMIN escribe catálogo; costos e inventario nunca son públicos.
-- Imágenes: URL HTTPS pública opcional. La aplicación no sube archivos.
+- Imágenes: carga administrativa directa a Cloudinary con un preset unsigned, vista previa local y URL HTTPS manual como alternativa.
 - Checkout: solicitud persistida sin aceptar precios del navegador; el ADMIN recalcula y confirma manualmente.
 - Pagos: QR, tarjeta y PayPal se presentan en un modal de demostración sin capturar datos bancarios.
 - Solicitudes ADMIN: muestran categoría, costo, ganancia, recargo, precio, disponibilidad y totales desde datos privados.
@@ -57,6 +57,13 @@ yarn firebase:admin --project ID --uid UID --email CORREO --grant
 ```
 
 Después de modificar claims, cerrar y volver a iniciar sesión.
+
+Para la carga de imágenes, completar también las variables públicas de Cloudinary. Nunca colocar `API_SECRET` en una variable `VITE_*`:
+
+```env
+VITE_CLOUDINARY_CLOUD_NAME=nombre-del-cloud
+VITE_CLOUDINARY_UPLOAD_PRESET=preset-unsigned
+```
 
 Para pruebas de reglas:
 
@@ -96,6 +103,7 @@ Configurar el hosting de la SPA para devolver index.html en rutas internas.
 - src/features/cart: carrito local por visitante/cuenta.
 - src/features/orders: solicitudes, historial y estados comerciales.
 - src/infrastructure/firebase: adaptadores de Authentication y Firestore.
+- src/infrastructure/cloudinary: validación y carga pública de imágenes.
 - src/styles: diseño adaptable.
 
 ## Documentación por fases
@@ -111,5 +119,6 @@ Configurar el hosting de la SPA para devolver index.html en rutas internas.
 - [Navegación y comprobante electrónico](docs/phase-10-invoice-ux.md)
 - [Pagos reportados y entrega por alcance](docs/phase-11-simulated-payments.md)
 - [Modal de pago y detalle comercial](docs/phase-12-payment-modal-commercial-detail.md)
+- [Imágenes de productos con Cloudinary](docs/phase-13-cloudinary-images.md)
 
 Siguiente bloque: reemplazar los datos provisionales de empresa y tienda, integrar un proveedor de pago verificable y optimizar la carga inicial antes de publicar Hosting.

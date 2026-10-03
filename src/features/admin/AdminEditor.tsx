@@ -1,11 +1,13 @@
-import { useEffect, useState, type FormEvent } from 'react'
+import { useEffect, useState, type ChangeEvent, type FormEvent } from 'react'
 import { runtime } from '../../app/services/runtime'
+import { PRODUCT_IMAGE_TYPES, readCloudinaryEnvironment, uploadProductImage, validateProductImage } from '../../infrastructure/cloudinary/cloudinary'
 import type { AdminCategory, AdminProduct, CategoryInput, ProductInput } from './admin.models'
 import { calculatePrice } from '../pricing/calculatePrice'
 import { formatMoney } from '../../shared/utils/formatMoney'
 
 const blankCategory = (): CategoryInput => ({id:crypto.randomUUID(),expectedVersion:0,name:'',slug:'',description:'',active:true})
 const blankProduct = (): ProductInput => ({...blankCategory(),sku:'',categoryId:'',imageUrl:'',costMinor:0,profitMinor:0,billingRateBps:1600,onHand:0,active:false})
+const cloudinary = readCloudinaryEnvironment(import.meta.env)
 
 export function AdminEditor({ kind }: { kind: 'products' | 'categories' }) {
   const service = runtime.mode === 'firebase' ? runtime.admin : null
@@ -19,6 +21,9 @@ export function AdminEditor({ kind }: { kind: 'products' | 'categories' }) {
   const [input,setInput] = useState<ProductInput>(blankProduct)
   const [editing,setEditing] = useState(false)
   const [editingCommitted,setEditingCommitted] = useState(0)
+  const [selectedImage,setSelectedImage] = useState<File|null>(null)
+  const [imagePreview,setImagePreview] = useState<string|null>(null)
+  const [uploading,setUploading] = useState(false)
 
   useEffect(() => {
     if (!service) return
@@ -37,6 +42,10 @@ export function AdminEditor({ kind }: { kind: 'products' | 'categories' }) {
     return () => {cancelled=true}
   },[kind,service])
 
+  useEffect(() => {
+    return () => { if (imagePreview) URL.revokeObjectURL(imagePreview) }
+  },[imagePreview])
+
   async function more() {
     if (!service || !next) return
     setLoading(true);setError('')
@@ -51,22 +60,38 @@ export function AdminEditor({ kind }: { kind: 'products' | 'categories' }) {
     setSaving(true);setError('');setNotice('')
     let persisted = false
     try {
-      if (kind==='products') await service.saveProduct(input)
+      let value = input
+      if (kind==='products' && selectedImage) {
+        if (!cloudinary.configured) throw new Error(cloudinary.message)
+        setUploading(true)
+        const uploaded = await uploadProductImage(selectedImage, cloudinary.config)
+        value = {...input,imageUrl:uploaded.secureUrl}
+        setInput(value);clearSelectedImage();setUploading(false)
+      }
+      if (kind==='products') await service.saveProduct(value)
       else {
-        const {id,expectedVersion,name,slug,description,active}=input
+        const {id,expectedVersion,name,slug,description,active}=value
         await service.saveCategory({id,expectedVersion,name,slug,description,active})
       }
       persisted = true
-      setEditing(false);setInput(blankProduct());setEditingCommitted(0)
+      setEditing(false);setInput(blankProduct());setEditingCommitted(0);clearSelectedImage()
       const page=await (kind==='products'?service.listProducts():service.listCategories())
-      setRows(page.items);setNext(page.nextCursor);setEditing(false);setInput(blankProduct());setEditingCommitted(0);setNotice('Cambios guardados. Recarga la tienda para ver el catálogo actualizado.')
+      setRows(page.items);setNext(page.nextCursor);setEditing(false);setInput(blankProduct());setEditingCommitted(0);clearSelectedImage();setNotice('Cambios guardados. Recarga la tienda para ver el catálogo actualizado.')
     } catch(e) {setError(persisted ? 'Los cambios se guardaron, pero no se pudo actualizar la lista. Recarga la página.' : e instanceof Error?e.message:'No se pudo guardar.')}
-    finally {setSaving(false)}
+    finally {setUploading(false);setSaving(false)}
   }
   function edit(row: AdminCategory|AdminProduct) {
     setError('');setNotice('');setInput({id:row.id,expectedVersion:row.version,name:row.name,slug:row.slug,description:row.description,active:row.active,sku:'sku' in row?row.sku:'',categoryId:'categoryId' in row?row.categoryId:'',imageUrl:'imageUrl' in row?row.imageUrl:'',costMinor:'costMinor' in row?row.costMinor:0,profitMinor:'profitMinor' in row?row.profitMinor:0,billingRateBps:'billingRateBps' in row?row.billingRateBps:1600,onHand:'onHand' in row?row.onHand:0});setEditing(true)
+    clearSelectedImage()
     setEditingCommitted('committed' in row?row.committed:0)
   }
+  function selectImage(event: ChangeEvent<HTMLInputElement>) {
+    const file=event.target.files?.[0]
+    if(!file) return
+    try {validateProductImage(file);setSelectedImage(file);setImagePreview(URL.createObjectURL(file));setError('');setNotice('Imagen lista. Se subirá a Cloudinary al guardar el producto.')}
+    catch(e) {event.target.value='';clearSelectedImage();setError(e instanceof Error?e.message:'No se pudo leer la imagen.')}
+  }
+  function clearSelectedImage() {setSelectedImage(null);setImagePreview(null)}
   function update<K extends keyof ProductInput>(key: K,value: ProductInput[K]) {setInput(old=>({...old,[key]:value}))}
   if (!service) return <p>La edición requiere Firebase y una cuenta administradora. El modo demo no guarda cambios.</p>
   let preview = '—'
@@ -77,7 +102,7 @@ export function AdminEditor({ kind }: { kind: 'products' | 'categories' }) {
     {error && <p role="alert" className="notice">{error}</p>}
     {notice && <p role="status">{notice}</p>}
     {loading && <p role="status">Cargando…</p>}
-    <button className="button" disabled={saving} onClick={()=>{setInput({...blankProduct(),active:kind==='categories'});setEditingCommitted(0);setEditing(true);setNotice('')}}>Crear {kind==='products'?'producto':'categoría'}</button>
+    <button className="button" disabled={saving} onClick={()=>{setInput({...blankProduct(),active:kind==='categories'});setEditingCommitted(0);clearSelectedImage();setEditing(true);setNotice('')}}>Crear {kind==='products'?'producto':'categoría'}</button>
     <div className="table-scroll"><table><thead><tr><th>Nombre</th><th>Estado</th>{kind==='products'&&<><th>Físico</th><th>Comprometido</th><th>Disponible</th></>}<th>Acción</th></tr></thead><tbody>
       {rows.map(row=>{
         const product='onHand' in row?row:null
@@ -100,7 +125,12 @@ export function AdminEditor({ kind }: { kind: 'products' | 'categories' }) {
         {kind==='products' && <>
           <label>SKU<input required maxLength={120} pattern="[a-zA-Z0-9][a-zA-Z0-9_-]*" disabled={input.expectedVersion>0} value={input.sku} onChange={e=>update('sku',e.target.value)} /></label>
           <label>Categoría<select required value={input.categoryId} onChange={e=>update('categoryId',e.target.value)}><option value="">Selecciona una categoría</option>{categories.map(c=><option key={c.id} value={c.id}>{c.name}{c.active?'':' (inactiva)'}</option>)}</select></label>
-          <label>URL HTTPS de imagen (opcional)<input type="url" maxLength={2000} value={input.imageUrl} onChange={e=>update('imageUrl',e.target.value)} /></label>
+          <div className="cloudinary-field">
+            <label>Imagen del producto<input type="file" accept={PRODUCT_IMAGE_TYPES.join(',')} onChange={selectImage} /></label>
+            <small>{cloudinary.configured ? 'JPG, PNG, WebP o AVIF, hasta 10 MB. La imagen se sube al guardar.' : cloudinary.message}</small>
+            {(imagePreview||input.imageUrl) && <div className="admin-image-preview"><img src={imagePreview??input.imageUrl} alt={`Vista previa de ${input.name||'producto'}`} /><div><strong>{selectedImage?.name??'Imagen actual'}</strong><button className="text-button" type="button" onClick={()=>{clearSelectedImage();update('imageUrl','')}}>Quitar imagen</button></div></div>}
+          </div>
+          <label>URL HTTPS de imagen<input type="url" maxLength={2000} value={input.imageUrl} onChange={e=>{clearSelectedImage();update('imageUrl',e.target.value)}} /><small>Se completa automáticamente después de subir a Cloudinary. También admite una URL pública manual.</small></label>
           <div className="admin-fields">
             <label>Costo (Bs)<input type="number" min="0" max="10000000" step=".01" required value={input.costMinor/100} onChange={e=>update('costMinor',Math.round(Number(e.target.value)*100))} /></label>
             <label>Ganancia fija (Bs)<input type="number" min="0" max="10000000" step=".01" required value={input.profitMinor/100} onChange={e=>update('profitMinor',Math.round(Number(e.target.value)*100))} /></label>
@@ -116,7 +146,7 @@ export function AdminEditor({ kind }: { kind: 'products' | 'categories' }) {
           <p>Precio público calculado: <strong>{preview}</strong></p>
         </>}
         <label className="checkbox-label"><input type="checkbox" checked={input.active} onChange={e=>update('active',e.target.checked)} />{kind==='products'?'Publicar producto':'Categoría activa'}</label>
-        <div className="auth-links"><button className="button" disabled={saving}>{saving?'Guardando…':'Guardar'}</button><button type="button" onClick={()=>setEditing(false)}>Cancelar</button></div>
+        <div className="auth-links"><button className="button" disabled={saving}>{uploading?'Subiendo imagen…':saving?'Guardando…':'Guardar'}</button><button type="button" onClick={()=>{clearSelectedImage();setEditing(false)}}>Cancelar</button></div>
       </fieldset>
     </form>}
   </section>
