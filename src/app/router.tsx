@@ -29,7 +29,7 @@ export function AppRoutes() {
         <Route path="checkout" element={<CheckoutPage />} />
         <Route path="cuenta" element={<AccountPage />} />
         <Route path="mis-solicitudes" element={<OrderHistoryPage />} />
-        <Route path="mis-solicitudes/:orderId/factura" element={<InvoicePage />} />
+        <Route path="mis-solicitudes/:orderId/comprobante" element={<InvoicePage />} />
         <Route path="login" element={<AuthPage key="login" mode="login" />} />
         <Route path="recuperar-acceso" element={<AuthPage key="reset" mode="reset" />} />
         <Route path="registro" element={<AuthPage key="register" mode="register" />} />

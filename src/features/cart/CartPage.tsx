@@ -53,7 +53,7 @@ export function CartPage() {
       <aside className="cart-summary">
         <h2>Tu resumen</h2><p>{summary.quantity} unidades</p>
         <div className="summary-total"><span>Subtotal estimado</span><strong>{loading||error||summary.overflow?'—':formatMoney(summary.subtotalMinor)}</strong></div>
-        <p>Entrega pendiente de definir. El precio unitario ya incluye el recargo de facturación.</p>
+        <p>Entrega pendiente de definir. El precio unitario ya incluye el recargo tributario.</p>
         {summary.overflow&&<p role="alert">No se puede calcular este importe. Revisa las cantidades.</p>}
         {canContinue?<Link className="button" to="/checkout">Preparar pedido <Icon name="arrow-right" /></Link>:<p>Revisa los productos del carrito antes de continuar.</p>}
         <Link className="text-link" to="/productos">Seguir explorando</Link>

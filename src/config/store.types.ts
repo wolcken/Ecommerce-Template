@@ -34,8 +34,13 @@ export interface StoreConfig {
     deliveryMethods: readonly ('pickup' | 'shipping')[]
     pickupLocations: readonly PickupLocation[]
     shipping: {
-      flatRateMinor: number
+      nationalRateMinor: number
+      internationalRateMinor: number
       notice: string
+    }
+    payments: {
+      simulationEnabled: boolean
+      methods: readonly ('QR' | 'CARD' | 'PAYPAL')[]
     }
   }
 }

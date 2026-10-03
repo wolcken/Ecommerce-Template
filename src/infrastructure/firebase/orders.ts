@@ -17,6 +17,7 @@ import {
 } from 'firebase/firestore'
 import { storeConfig } from '../../config/store.config.ts'
 import { calculatePrice } from '../../features/pricing/calculatePrice.ts'
+import { deliveryFeeMinor } from '../../features/orders/delivery.logic.ts'
 import { validateOrderRequest } from '../../features/orders/order.logic.ts'
 import type {
   AdminOrderAction,
@@ -24,6 +25,7 @@ import type {
   OrderItemSnapshot,
   OrderService,
   OrderStatus,
+  PaymentMethod,
 } from '../../features/orders/order.models'
 
 const PAGE_SIZE = 100
@@ -88,11 +90,14 @@ function parseOrder(snapshot: DocumentSnapshot<DocumentData>): CustomerOrder {
       ? { method: 'PICKUP' as const, locationId: String(text(deliveryData.locationId)) }
       : (() => {
           const address = record(deliveryData.address)
+          const scope = deliveryData.scope === 'INTERNATIONAL' ? 'INTERNATIONAL' as const : 'NATIONAL' as const
           return {
             method: 'SHIPPING' as const,
+            scope,
             address: {
               recipient: String(text(address.recipient)),
               phone: String(text(address.phone)),
+              country: 'country' in address ? String(text(address.country)) : 'Bolivia',
               city: String(text(address.city)),
               line1: String(text(address.line1)),
               notes: String(text(address.notes)),
@@ -127,6 +132,21 @@ function parseOrder(snapshot: DocumentSnapshot<DocumentData>): CustomerOrder {
       }
     : null
 
+  const paymentData = data.payment && typeof data.payment === 'object' ? record(data.payment) : null
+  const method = paymentData ? text(paymentData.method) as PaymentMethod : null
+  if (method !== null && method !== 'QR' && method !== 'CARD' && method !== 'PAYPAL') {
+    throw new Error('La solicitud contiene un modo de pago inválido.')
+  }
+  const payment = paymentData && method
+    ? {
+        method,
+        status: 'REPORTED' as const,
+        reportedAmountMinor: integer(paymentData.reportedAmountMinor),
+        reference: String(text(paymentData.reference)),
+        reportedAt: String(instant(paymentData.reportedAt)),
+      }
+    : null
+
   return {
     id: snapshot.id,
     ownerId: String(text(data.ownerId)),
@@ -145,6 +165,7 @@ function parseOrder(snapshot: DocumentSnapshot<DocumentData>): CustomerOrder {
       documentComplement: text(billing.documentComplement, true),
     },
     delivery,
+    payment,
     requestedItems,
     confirmedItems,
     totals,
@@ -195,6 +216,13 @@ export function createFirestoreOrderService(
         customer: input.customer,
         billing: input.billing,
         delivery: input.delivery,
+        payment: {
+          method: input.payment.method,
+          status: 'REPORTED',
+          reportedAmountMinor: input.payment.reportedAmountMinor,
+          reference: `SIM-${reference.id.slice(0, 8).toUpperCase()}`,
+          reportedAt: serverTimestamp(),
+        },
         requestedItems: input.items,
         confirmedItems: [],
         totals: null,
@@ -315,7 +343,10 @@ export function createFirestoreOrderService(
         }
       })
 
-      const shippingMinor = order.delivery.method === 'SHIPPING' ? storeConfig.commerce.shipping.flatRateMinor : 0
+      const shippingMinor = deliveryFeeMinor(
+        order.delivery.method === 'SHIPPING' ? order.delivery.scope : 'PICKUP',
+        storeConfig.commerce.shipping,
+      )
       const totalMinor = itemsMinor + shippingMinor
       if (!Number.isSafeInteger(shippingMinor) || shippingMinor < 0 || !Number.isSafeInteger(totalMinor)) {
         throw new Error('La tarifa de envío configurada no es válida.')

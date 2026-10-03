@@ -5,6 +5,7 @@ import type {
   DeliverySelection,
   OrderRequestInput,
   OrderStatus,
+  PaymentMethod,
 } from './order.models'
 
 function required(value: unknown, label: string, max: number) {
@@ -26,11 +27,16 @@ function delivery(value: DeliverySelection): DeliverySelection {
     return { method: 'PICKUP', locationId: required(value.locationId, 'el punto de recojo', 120) }
   }
   if (value.method !== 'SHIPPING' || !value.address) throw new Error('Selecciona una entrega válida.')
+  if (value.scope !== 'NATIONAL' && value.scope !== 'INTERNATIONAL') {
+    throw new Error('Selecciona envío nacional o internacional.')
+  }
   return {
     method: 'SHIPPING',
+    scope: value.scope,
     address: {
       recipient: required(value.address.recipient, 'la persona que recibirá el envío', 120),
       phone: required(value.address.phone, 'el teléfono de envío', 30),
+      country: required(value.address.country, 'el país', 120),
       city: required(value.address.city, 'la ciudad', 120),
       line1: required(value.address.line1, 'la dirección', 300),
       notes: optional(value.address.notes, 'las referencias', 500),
@@ -59,6 +65,13 @@ export function validateOrderRequest(input: OrderRequestInput): OrderRequestInpu
 
   const documentType = input.billing?.documentType
   if (documentType !== 'NIT' && documentType !== 'CI') throw new Error('Selecciona NIT o CI.')
+  const paymentMethod = input.payment?.method
+  if (paymentMethod !== 'QR' && paymentMethod !== 'CARD' && paymentMethod !== 'PAYPAL') {
+    throw new Error('Selecciona un modo de pago.')
+  }
+  if (!Number.isSafeInteger(input.payment.reportedAmountMinor) || input.payment.reportedAmountMinor < 0) {
+    throw new Error('El importe reportado no es válido.')
+  }
 
   return {
     kind: input.kind,
@@ -78,6 +91,7 @@ export function validateOrderRequest(input: OrderRequestInput): OrderRequestInpu
           : null,
     },
     delivery: delivery(input.delivery),
+    payment: { method: paymentMethod, reportedAmountMinor: input.payment.reportedAmountMinor },
   }
 }
 
@@ -90,8 +104,18 @@ const labels: Record<OrderStatus, string> = {
   EXPIRED: 'Vencida',
 }
 
-export function orderStatusLabel(status: OrderStatus) {
-  return labels[status]
+const paymentLabels: Record<PaymentMethod, string> = {
+  QR: 'QR',
+  CARD: 'Tarjeta de crédito o débito',
+  PAYPAL: 'PayPal',
+}
+
+export function orderStatusLabel(status: OrderStatus, paymentReported = false) {
+  return status === 'REQUESTED' && paymentReported ? 'Pago reportado' : labels[status]
+}
+
+export function paymentMethodLabel(method: PaymentMethod) {
+  return paymentLabels[method]
 }
 
 export function availableAdminActions(order: CustomerOrder): AdminOrderAction[] {

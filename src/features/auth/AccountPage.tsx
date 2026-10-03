@@ -114,7 +114,7 @@ export function AccountPage() {
           <label>Teléfono<input name="phone" type="tel" required maxLength={30} defaultValue={profile?.phone ?? ''} autoComplete="tel" /></label>
           <label className="checkbox-label">
             <input type="checkbox" checked={includeBilling} onChange={(event) => setIncludeBilling(event.target.checked)} />
-            Guardar también datos de facturación
+            Guardar también datos para el comprobante
           </label>
           {includeBilling && (
             <>

@@ -7,7 +7,7 @@ export function validateProfileInput(input: ProfileInput): ProfileInput {
     const customer = validateCheckoutDetails({
       customer: { firstName: input.firstName, lastName: input.lastName, phone: input.phone },
       billing: {
-        name: 'Perfil sin facturación',
+        name: 'Perfil sin datos tributarios',
         documentType: 'NIT',
         documentNumber: 'PENDIENTE',
         documentComplement: null,

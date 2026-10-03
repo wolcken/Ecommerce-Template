@@ -35,8 +35,13 @@ export const storeConfig = {
       },
     ],
     shipping: {
-      flatRateMinor: 0,
+      nationalRateMinor: 2000,
+      internationalRateMinor: 10000,
       notice: 'La cobertura y el horario se coordinan al confirmar.',
+    },
+    payments: {
+      simulationEnabled: true,
+      methods: ['QR', 'CARD', 'PAYPAL'],
     },
   },
 } satisfies StoreConfig

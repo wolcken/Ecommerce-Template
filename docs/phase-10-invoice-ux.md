@@ -1,4 +1,4 @@
-# Fase 10: navegación y factura simulada
+# Fase 10: navegación y comprobante electrónico
 
 ## Navegación
 
@@ -11,9 +11,9 @@ Después de autenticar:
 - si la autenticación fue requerida por una ruta permitida, se regresa a esa ruta;
 - un USER nunca es redirigido a una ruta ADMIN.
 
-## Factura simulada
+## Comprobante electrónico
 
-Una solicitud `COMPLETED` muestra `Ver factura simulada`. El documento incluye:
+Una solicitud `COMPLETED` muestra `Ver comprobante electrónico`. El documento incluye:
 
 - número de simulación y pedido;
 - fecha de finalización;
@@ -29,7 +29,7 @@ Los datos de empresa son provisionales y se configuran en `src/config/store.conf
 
 ## Seguridad
 
-La factura se genera con el snapshot confirmado del pedido. La consulta continúa usando `listMine`, por lo que las reglas existentes solo permiten al propietario consultar sus solicitudes. No se agregan colecciones públicas ni reglas nuevas.
+El comprobante se genera con el snapshot confirmado del pedido. La consulta continúa usando `listMine`, por lo que las reglas existentes solo permiten al propietario consultar sus solicitudes. No se agregan colecciones públicas ni reglas nuevas.
 
 ## Validación
 

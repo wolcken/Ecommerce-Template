@@ -19,7 +19,7 @@ function delivery(order: CustomerOrder) {
     const location = storeConfig.commerce.pickupLocations.find((item) => item.id === locationId)
     return location ? `Recojo en ${location.name}: ${location.address}` : 'Recojo en tienda'
   }
-  return `${order.delivery.address.line1}, ${order.delivery.address.city}`
+  return `Envío ${order.delivery.scope === 'INTERNATIONAL' ? 'internacional' : 'nacional'}: ${order.delivery.address.line1}, ${order.delivery.address.city}, ${order.delivery.address.country}`
 }
 
 export function InvoicePage() {
@@ -45,7 +45,7 @@ export function InvoicePage() {
       .catch((caught) => {
         if (!cancelled) {
           setOrder(null)
-          setError(caught instanceof Error ? caught.message : 'No se pudo preparar la factura simulada.')
+          setError(caught instanceof Error ? caught.message : 'No se pudo preparar el comprobante electrónico.')
         }
       })
       .finally(() => {
@@ -60,20 +60,20 @@ export function InvoicePage() {
   if (authError) return <EmptyState title="No se pudo verificar tu sesión." description={authError} />
   if (state.status === 'LOADING') return <p className="service-status">Verificando sesión…</p>
   if (state.status === 'ANONYMOUS') {
-    return <EmptyState title="Inicia sesión para ver esta factura." description="El comprobante solo está disponible para quien realizó la compra." to="/login" action="Iniciar sesión" />
+    return <EmptyState title="Inicia sesión para ver este comprobante." description="El comprobante solo está disponible para quien realizó la compra." to="/login" action="Iniciar sesión" />
   }
   if (runtime.mode !== 'firebase') {
-    return <EmptyState title="La factura simulada requiere Firebase." description="Activa Firebase para consultar una compra completada." to="/productos" action="Ver productos" />
+    return <EmptyState title="El comprobante electrónico requiere Firebase." description="Activa Firebase para consultar una compra completada." to="/productos" action="Ver productos" />
   }
-  if (loading) return <p className="service-status">Preparando factura simulada…</p>
-  if (error) return <EmptyState title="No se pudo preparar la factura." description={error} to="/mis-solicitudes" action="Volver a mis solicitudes" />
+  if (loading) return <p className="service-status">Preparando comprobante electrónico…</p>
+  if (error) return <EmptyState title="No se pudo preparar el comprobante." description={error} to="/mis-solicitudes" action="Volver a mis solicitudes" />
   if (!order) return <EmptyState title="No encontramos esta solicitud." description="Comprueba que pertenezca a tu cuenta." to="/mis-solicitudes" action="Volver a mis solicitudes" />
   if (!canGenerateInvoice(order) || !order.totals) {
-    return <EmptyState title="La factura todavía no está disponible." description="Se habilita cuando la tienda marca la solicitud como completada." to="/mis-solicitudes" action="Ver estado de la solicitud" />
+    return <EmptyState title="El comprobante todavía no está disponible." description="Se habilita cuando la tienda marca la solicitud como completada." to="/mis-solicitudes" action="Ver estado de la solicitud" />
   }
 
   const company = storeConfig.company
-  const invoiceNumber = `SIM-${order.number}`
+  const receiptNumber = `CE-${order.number}`
 
   return (
     <div className="container page-section invoice-page">
@@ -85,11 +85,11 @@ export function InvoicePage() {
         <header className="invoice-header">
           <div>
             <p className="eyebrow">Comprobante de venta</p>
-            <h1 id="invoice-title">Factura simulada</h1>
+            <h1 id="invoice-title">Comprobante electrónico</h1>
             <p className="invoice-disclaimer">Documento de demostración sin validez fiscal ni derecho a crédito fiscal.</p>
           </div>
           <dl className="invoice-meta">
-            <div><dt>Número</dt><dd>{invoiceNumber}</dd></div>
+            <div><dt>Número</dt><dd>{receiptNumber}</dd></div>
             <div><dt>Pedido</dt><dd>{order.number}</dd></div>
             <div><dt>Fecha</dt><dd>{date(order.updatedAt)}</dd></div>
           </dl>
@@ -134,7 +134,7 @@ export function InvoicePage() {
           <div><span>Envío</span><strong>{formatMoney(order.totals.shippingMinor)}</strong></div>
           <div className="invoice-grand-total"><span>Total de la compra</span><strong>{formatMoney(order.totals.totalMinor)}</strong></div>
         </div>
-        <p className="invoice-footnote">Los importes corresponden al precio confirmado y ya incluyen el recargo de facturación configurado para cada producto.</p>
+        <p className="invoice-footnote">Los importes corresponden al precio confirmado y ya incluyen el recargo tributario configurado para cada producto.</p>
       </article>
     </div>
   )

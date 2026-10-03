@@ -6,7 +6,7 @@ import { Icon } from '../../shared/components/Icon'
 import { formatMoney } from '../../shared/utils/formatMoney'
 import { useAuth } from '../auth/auth.context'
 import { canGenerateInvoice } from './invoice.logic'
-import { orderStatusLabel } from './order.logic'
+import { orderStatusLabel, paymentMethodLabel } from './order.logic'
 import type { CustomerOrder } from './order.models'
 
 function date(value: string) {
@@ -24,97 +24,38 @@ export function OrderHistoryPage() {
   useEffect(() => {
     if (!uid || runtime.mode !== 'firebase') return
     let cancelled = false
-    runtime.orders
-      .listMine()
-      .then((items) => {
-        if (!cancelled) {
-          setOrders(items)
-          setError(null)
-        }
-      })
-      .catch((error) => {
-        if (!cancelled) {
-          setOrders([])
-          setError(error instanceof Error ? error.message : 'No se pudieron cargar tus solicitudes.')
-        }
-      })
-      .finally(() => {
-        if (!cancelled) setOrdersOwnerId(uid)
-      })
-    return () => {
-      cancelled = true
-    }
+    runtime.orders.listMine().then((items) => { if (!cancelled) { setOrders(items); setError(null) } })
+      .catch((caught) => { if (!cancelled) { setOrders([]); setError(caught instanceof Error ? caught.message : 'No se pudieron cargar tus solicitudes.') } })
+      .finally(() => { if (!cancelled) setOrdersOwnerId(uid) })
+    return () => { cancelled = true }
   }, [uid])
 
   if (state.status === 'LOADING') return <p className="service-status">Verificando sesión…</p>
-  if (state.status === 'ANONYMOUS') {
-    return (
-      <EmptyState
-        eyebrow="Tus solicitudes"
-        title="Inicia sesión para consultar tus pedidos."
-        description="Aquí verás la revisión, confirmación y estado de cada solicitud."
-        to="/login"
-        action="Iniciar sesión"
-      />
-    )
-  }
-  if (runtime.mode !== 'firebase') {
-    return (
-      <EmptyState
-        eyebrow="Demostración"
-        title="Las solicitudes requieren Firebase."
-        description="Cambia la fuente de datos a Firebase para probar este flujo."
-        to="/productos"
-        action="Ver productos"
-      />
-    )
-  }
+  if (state.status === 'ANONYMOUS') return <EmptyState eyebrow="Tus solicitudes" title="Inicia sesión para consultar tus pedidos." description="Aquí verás la revisión, confirmación y estado de cada solicitud." to="/login" action="Iniciar sesión" />
+  if (runtime.mode !== 'firebase') return <EmptyState eyebrow="Demostración" title="Las solicitudes requieren Firebase." description="Cambia la fuente de datos a Firebase para probar este flujo." to="/productos" action="Ver productos" />
 
   return (
     <div className="container page-section">
       <p className="eyebrow">Mi cuenta</p>
       <h1>Mis solicitudes.</h1>
-      <p className="page-intro">El precio y las existencias quedan fijados cuando la tienda confirma.</p>
+      <p className="page-intro">La tienda validará el pago reportado, el precio y las existencias antes de confirmar.</p>
       {loading && <p role="status">Cargando solicitudes…</p>}
       {error && <p role="alert">{error}</p>}
-      {!loading && !error && orders.length === 0 && (
-        <EmptyState
-          title="Todavía no enviaste solicitudes."
-          description="Agrega productos al carrito y prepara tu primer pedido o reserva."
-          to="/productos"
-          action="Explorar productos"
-        />
-      )}
+      {!loading && !error && orders.length === 0 && <EmptyState title="Todavía no enviaste solicitudes." description="Agrega productos al carrito y prepara tu primer pedido o reserva." to="/productos" action="Explorar productos" />}
       <div className="order-list">
         {!loading && orders.map((order) => (
           <article className="order-card" key={order.id}>
             <header>
-              <div>
-                <span className="eyebrow">{order.kind === 'ORDER' ? 'Pedido' : 'Reserva'}</span>
-                <h2>{order.number ?? 'Solicitud en revisión'}</h2>
-              </div>
-              <span className={`status-pill status-${order.status.toLowerCase()}`}>
-                {orderStatusLabel(order.status)}
-              </span>
+              <div><span className="eyebrow">{order.kind === 'ORDER' ? 'Pedido' : 'Reserva'}</span><h2>{order.number ?? 'Solicitud en revisión'}</h2></div>
+              <span className={`status-pill status-${order.status.toLowerCase()}`}>{orderStatusLabel(order.status, Boolean(order.payment))}</span>
             </header>
             <p>Enviada el {date(order.createdAt)}</p>
-            <ul>
-              {order.confirmedItems.length
-                ? order.confirmedItems.map((item) => <li key={item.productId}>{item.name} × {item.quantity}</li>)
-                : order.requestedItems.map((item) => <li key={item.productId}>{item.productId} × {item.quantity}</li>)}
-            </ul>
-            {order.totals && (
-              <p className="order-total">
-                Total confirmado: <strong>{formatMoney(order.totals.totalMinor)}</strong>
-              </p>
-            )}
+            {order.payment && <p className="order-note"><strong>Pago reportado:</strong> {paymentMethodLabel(order.payment.method)} por {formatMoney(order.payment.reportedAmountMinor)}. Referencia {order.payment.reference}.</p>}
+            <ul>{order.confirmedItems.length ? order.confirmedItems.map((item) => <li key={item.productId}>{item.name} × {item.quantity}</li>) : order.requestedItems.map((item) => <li key={item.productId}>{item.productId} × {item.quantity}</li>)}</ul>
+            {order.totals && <p className="order-total">Total confirmado: <strong>{formatMoney(order.totals.totalMinor)}</strong></p>}
             {order.reservedUntil && <p>Reserva válida hasta {date(order.reservedUntil)}.</p>}
             {order.adminNote && <p className="order-note">Nota de la tienda: {order.adminNote}</p>}
-            {canGenerateInvoice(order) && (
-              <Link className="button invoice-link" to={`/mis-solicitudes/${order.id}/factura`}>
-                <Icon name="receipt" />Ver factura simulada
-              </Link>
-            )}
+            {canGenerateInvoice(order) && <Link className="button invoice-link" to={`/mis-solicitudes/${order.id}/comprobante`}><Icon name="receipt" />Ver comprobante electrónico</Link>}
           </article>
         ))}
       </div>

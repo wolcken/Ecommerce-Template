@@ -122,9 +122,15 @@ test('customer submits a request and ADMIN commits then releases stock',async()=
   customer:{firstName:'Ana',lastName:'Pérez',phone:'70000000'},
   billing:{name:'Ana Pérez',documentType:'NIT',documentNumber:'00123',documentComplement:null},
   delivery:{method:'PICKUP',locationId:'main-store'},
+  payment:{method:'QR',reportedAmountMinor:1206400},
  })
  assert.equal(created.status,'REQUESTED')
+ assert.equal(created.payment.method,'QR')
+ assert.equal(created.payment.status,'REPORTED')
  assert.equal(created.totals,null)
+ const rawCreated=(await getDoc(doc(customerDb,'orders',created.id))).data()
+ await assertFails(setDoc(doc(customerDb,'orders',created.id),
+  {payment:{...rawCreated.payment,reportedAmountMinor:1}},{merge:true}))
  await assertFails(getDoc(doc(environment.authenticatedContext('other').firestore(),'orders',created.id)))
  await assertFails(setDoc(doc(customerDb,'orders',created.id),{status:'CONFIRMED'},{merge:true}))
  await assertFails(getDoc(doc(customerDb,'inventory','adapter-laptop')))
@@ -151,9 +157,12 @@ test('customer submits a request and ADMIN commits then releases stock',async()=
   kind:'ORDER',items:[{productId:'adapter-laptop',quantity:1}],
   customer:{firstName:'Ana',lastName:'Pérez',phone:'70000000'},
   billing:{name:'Ana Pérez',documentType:'CI',documentNumber:'00123',documentComplement:'1A'},
-  delivery:{method:'SHIPPING',address:{recipient:'Ana Pérez',phone:'70000000',city:'La Paz',line1:'Calle de prueba 1',notes:''}},
+  delivery:{method:'SHIPPING',scope:'NATIONAL',address:{recipient:'Ana Pérez',phone:'70000000',country:'Bolivia',city:'La Paz',line1:'Calle de prueba 1',notes:''}},
+  payment:{method:'CARD',reportedAmountMinor:605200},
  })
  const purchaseConfirmed=await adminOrders.transition({orderId:purchase.id,expectedVersion:1,action:'CONFIRM',note:''})
+ assert.equal(purchaseConfirmed.totals.shippingMinor,2000)
+ assert.equal(purchaseConfirmed.totals.totalMinor,605200)
  const completed=await adminOrders.transition({orderId:purchase.id,expectedVersion:purchaseConfirmed.version,action:'COMPLETE',note:'Entregado.'})
  assert.equal(completed.status,'COMPLETED')
  const finalInventory=(await getDoc(doc(adminDb,'inventory','adapter-laptop'))).data()

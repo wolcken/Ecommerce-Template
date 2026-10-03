@@ -85,7 +85,8 @@ service cloud.firestore {
         && (data.billing == null || billingShape(data.billing))
         && data.version is int && data.version > 0
         && data.createdAt is timestamp && data.updatedAt is timestamp;
-    }    function deliveryShape(data) {
+    }
+    function deliveryShape(data) {
       return data is map
         && ((data.method == 'PICKUP'
           && data.keys().hasAll(['method','locationId'])
@@ -93,15 +94,28 @@ service cloud.firestore {
           && data.locationId is string && data.locationId.size() > 0 && data.locationId.size() <= 120)
         || (data.method == 'SHIPPING'
           && data.keys().hasAll(['method','address'])
-          && data.keys().hasOnly(['method','address'])
+          && data.keys().hasOnly(['method','address','scope'])
           && data.address is map
           && data.address.keys().hasAll(['recipient','phone','city','line1','notes'])
-          && data.address.keys().hasOnly(['recipient','phone','city','line1','notes'])
+          && data.address.keys().hasOnly(['recipient','phone','country','city','line1','notes'])
           && data.address.recipient is string && data.address.recipient.size() > 0 && data.address.recipient.size() <= 120
           && data.address.phone is string && data.address.phone.size() > 0 && data.address.phone.size() <= 30
           && data.address.city is string && data.address.city.size() > 0 && data.address.city.size() <= 120
           && data.address.line1 is string && data.address.line1.size() > 0 && data.address.line1.size() <= 300
-          && data.address.notes is string && data.address.notes.size() <= 500));
+          && data.address.notes is string && data.address.notes.size() <= 500
+          && ((!('scope' in data) && !('country' in data.address))
+            || ((data.scope == 'NATIONAL' || data.scope == 'INTERNATIONAL')
+              && data.address.country is string && data.address.country.size() > 0 && data.address.country.size() <= 120))));
+    }
+    function paymentShape(data) {
+      return data is map
+        && data.keys().hasAll(['method','status','reportedAmountMinor','reference','reportedAt'])
+        && data.keys().hasOnly(['method','status','reportedAmountMinor','reference','reportedAt'])
+        && (data.method == 'QR' || data.method == 'CARD' || data.method == 'PAYPAL')
+        && data.status == 'REPORTED'
+        && data.reportedAmountMinor is int && data.reportedAmountMinor >= 0
+        && data.reference is string && data.reference.size() > 0 && data.reference.size() <= 80
+        && data.reportedAt is timestamp;
     }
     function totalsShape(data) {
       return data is map && data.keys().hasAll(['currency','itemsMinor','shippingMinor','totalMinor'])
@@ -115,7 +129,7 @@ service cloud.firestore {
       return data.keys().hasAll(['ownerId','kind','status','number','customer','billing','delivery',
         'requestedItems','confirmedItems','totals','adminNote','confirmedAt','reservedUntil',
         'version','createdAt','updatedAt'])
-        && data.keys().hasOnly(['ownerId','kind','status','number','customer','billing','delivery',
+        && data.keys().hasOnly(['ownerId','kind','status','number','customer','billing','delivery','payment',
           'requestedItems','confirmedItems','totals','adminNote','confirmedAt','reservedUntil',
           'version','createdAt','updatedAt'])
         && data.ownerId is string && data.ownerId.size() > 0
@@ -123,6 +137,7 @@ service cloud.firestore {
         && (data.status == 'REQUESTED' || data.status == 'CONFIRMED' || data.status == 'REJECTED'
           || data.status == 'CANCELLED' || data.status == 'COMPLETED' || data.status == 'EXPIRED')
         && customerShape(data.customer) && billingShape(data.billing) && deliveryShape(data.delivery)
+        && (!('payment' in data) || paymentShape(data.payment))
         && data.requestedItems is list && data.requestedItems.size() > 0 && data.requestedItems.size() <= 50
         && data.confirmedItems is list && data.confirmedItems.size() <= 50
         && data.adminNote is string && data.adminNote.size() <= 500
@@ -200,6 +215,8 @@ service cloud.firestore {
     }    match /orders/{id} {
       allow read: if isAdmin() || (isSignedIn() && resource.data.ownerId == request.auth.uid);
       allow create: if isSignedIn() && orderShape(request.resource.data)
+        && 'payment' in request.resource.data && paymentShape(request.resource.data.payment)
+        && request.resource.data.payment.reportedAt == request.time
         && request.resource.data.ownerId == request.auth.uid
         && request.resource.data.status == 'REQUESTED'
         && request.resource.data.version == 1
@@ -214,6 +231,7 @@ service cloud.firestore {
         && request.resource.data.customer == resource.data.customer
         && request.resource.data.billing == resource.data.billing
         && request.resource.data.delivery == resource.data.delivery
+        && request.resource.data.get('payment', null) == resource.data.get('payment', null)
         && request.resource.data.requestedItems == resource.data.requestedItems
         && orderTransition(resource.data,request.resource.data);
       allow delete: if false;

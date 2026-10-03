@@ -104,7 +104,7 @@ export function AdminEditor({ kind }: { kind: 'products' | 'categories' }) {
           <div className="admin-fields">
             <label>Costo (Bs)<input type="number" min="0" max="10000000" step=".01" required value={input.costMinor/100} onChange={e=>update('costMinor',Math.round(Number(e.target.value)*100))} /></label>
             <label>Ganancia fija (Bs)<input type="number" min="0" max="10000000" step=".01" required value={input.profitMinor/100} onChange={e=>update('profitMinor',Math.round(Number(e.target.value)*100))} /></label>
-            <label>Recargo de facturación (%)<input type="number" min="0" max="100" step=".01" required value={input.billingRateBps/100} onChange={e=>update('billingRateBps',Math.round(Number(e.target.value)*100))} /></label>
+            <label>Recargo tributario (%)<input type="number" min="0" max="100" step=".01" required value={input.billingRateBps/100} onChange={e=>update('billingRateBps',Math.round(Number(e.target.value)*100))} /></label>
             <label>Stock físico total<input type="number" min={editingCommitted} max="1000000" step="1" required value={input.onHand} onChange={e=>update('onHand',Number(e.target.value))} /></label>
           </div>
           <div className="inventory-preview" aria-label="Resumen de inventario del producto">

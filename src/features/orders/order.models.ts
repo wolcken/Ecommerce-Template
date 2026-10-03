@@ -11,18 +11,34 @@ export type OrderStatus =
   | 'COMPLETED'
   | 'EXPIRED'
 
+export type ShippingScope = 'NATIONAL' | 'INTERNATIONAL'
+export type PaymentMethod = 'QR' | 'CARD' | 'PAYPAL'
+
 export type DeliverySelection =
   | { method: 'PICKUP'; locationId: string }
   | {
       method: 'SHIPPING'
+      scope: ShippingScope
       address: {
         recipient: string
         phone: string
+        country: string
         city: string
         line1: string
         notes: string
       }
     }
+
+export interface PaymentSelection {
+  method: PaymentMethod
+  reportedAmountMinor: MinorAmount
+}
+
+export interface PaymentReport extends PaymentSelection {
+  status: 'REPORTED'
+  reference: string
+  reportedAt: Instant
+}
 
 export interface OrderRequestInput {
   kind: OrderKind
@@ -30,6 +46,7 @@ export interface OrderRequestInput {
   customer: { firstName: string; lastName: string; phone: string }
   billing: BillingDetails
   delivery: DeliverySelection
+  payment: PaymentSelection
 }
 
 export interface OrderItemSnapshot {
@@ -59,6 +76,7 @@ export interface CustomerOrder {
   customer: OrderRequestInput['customer']
   billing: BillingDetails
   delivery: DeliverySelection
+  payment: PaymentReport | null
   requestedItems: readonly CartItem[]
   confirmedItems: readonly OrderItemSnapshot[]
   totals: OrderTotals | null
