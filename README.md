@@ -28,6 +28,8 @@ La aplicación usa Firebase Authentication y una única base Firestore. No despl
 - Reglas: solo ADMIN escribe catálogo; costos e inventario nunca son públicos.
 - Imágenes: URL HTTPS pública opcional. La aplicación no sube archivos.
 - Checkout: solicitud persistida sin aceptar precios del navegador; el ADMIN recalcula y confirma manualmente.
+- Pagos: QR, tarjeta y PayPal se presentan en un modal de demostración sin capturar datos bancarios.
+- Solicitudes ADMIN: muestran categoría, costo, ganancia, recargo, precio, disponibilidad y totales desde datos privados.
 - Reservas: duran 24 horas desde la confirmación, comprometen stock y vencen manualmente en el panel ADMIN.
 
 El precio usa costo + ganancia fija + 16 % inicial sobre esa suma. Ejemplo acordado: Bs 5000 + Bs 200 + 16 % = Bs 6032. Costos, ganancias y NIT no se colocan en variables VITE_* ni en documentos públicos.
@@ -108,5 +110,6 @@ Configurar el hosting de la SPA para devolver index.html en rutas internas.
 - [Sesión visible e inventario administrativo](docs/phase-9-admin-ux.md)
 - [Navegación y comprobante electrónico](docs/phase-10-invoice-ux.md)
 - [Pagos reportados y entrega por alcance](docs/phase-11-simulated-payments.md)
+- [Modal de pago y detalle comercial](docs/phase-12-payment-modal-commercial-detail.md)
 
 Siguiente bloque: reemplazar los datos provisionales de empresa y tienda, integrar un proveedor de pago verificable y optimizar la carga inicial antes de publicar Hosting.

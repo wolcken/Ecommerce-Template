@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from 'react'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router'
 import { runtime } from '../../app/services/runtime'
 import { storeConfig } from '../../config/store.config'
@@ -64,10 +64,13 @@ export function CheckoutPage() {
   const [pickupId, setPickupId] = useState(firstPickup?.id ?? '')
   const [shipping, setShipping] = useState({ recipient: '', phone: '', country: 'Bolivia', city: '', line1: '', notes: '' })
   const [details, setDetails] = useState<CheckoutDetails | null>(null)
-  const [paymentVisible, setPaymentVisible] = useState(false)
+  const [paymentModalOpen, setPaymentModalOpen] = useState(false)
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('QR')
+  const [paymentError, setPaymentError] = useState('')
   const [message, setMessage] = useState('')
   const [sending, setSending] = useState(false)
+  const sendingRef = useRef(false)
+  const closePaymentRef = useRef<HTMLButtonElement>(null)
 
   useEffect(() => {
     if (!uid || runtime.mode !== 'firebase') return
@@ -84,7 +87,7 @@ export function CheckoutPage() {
           phone: value?.phone ?? '',
         }))
         setDetails(null)
-        setPaymentVisible(false)
+        setPaymentModalOpen(false)
         setMessage('')
       })
       .catch((caught) => {
@@ -100,6 +103,22 @@ export function CheckoutPage() {
       })
     return () => { cancelled = true }
   }, [uid])
+
+  useEffect(() => {
+    if (!paymentModalOpen) return
+    const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && !sendingRef.current) setPaymentModalOpen(false)
+    }
+    document.body.classList.add('modal-open')
+    document.addEventListener('keydown', closeOnEscape)
+    closePaymentRef.current?.focus()
+    return () => {
+      document.body.classList.remove('modal-open')
+      document.removeEventListener('keydown', closeOnEscape)
+      previousFocus?.focus()
+    }
+  }, [paymentModalOpen])
 
   if (!cart.ready || loading || (uid && profileLoading)) {
     return <p className="service-status" role="status">Preparando el resumen…</p>
@@ -118,7 +137,8 @@ export function CheckoutPage() {
 
   function resetReview() {
     setDetails(null)
-    setPaymentVisible(false)
+    setPaymentModalOpen(false)
+    setPaymentError('')
     setMessage('')
   }
 
@@ -139,7 +159,7 @@ export function CheckoutPage() {
           documentComplement: String(fields.get('complement') ?? ''),
         },
       }))
-      setPaymentVisible(false)
+      setPaymentModalOpen(false)
       setMessage('Datos confirmados. Continúa con el modo de pago.')
     } catch (caught) {
       setMessage(caught instanceof Error ? caught.message : 'Revisa los datos.')
@@ -156,9 +176,10 @@ export function CheckoutPage() {
   }
 
   async function reportPayment() {
-    if (!details || !paymentVisible || state.status !== 'AUTHENTICATED' || runtime.mode !== 'firebase') return
+    if (!details || !paymentModalOpen || state.status !== 'AUTHENTICATED' || runtime.mode !== 'firebase') return
+    sendingRef.current = true
     setSending(true)
-    setMessage('')
+    setPaymentError('')
     try {
       await runtime.orders.create({
         kind,
@@ -177,8 +198,9 @@ export function CheckoutPage() {
       cart.clear()
       navigate('/mis-solicitudes')
     } catch (caught) {
-      setMessage(caught instanceof Error ? caught.message : 'No se pudo registrar el pago reportado.')
+      setPaymentError(caught instanceof Error ? caught.message : 'No se pudo registrar el pago reportado.')
     } finally {
+      sendingRef.current = false
       setSending(false)
     }
   }
@@ -228,8 +250,8 @@ export function CheckoutPage() {
           <fieldset className="checkout-choice-group">
             <legend>Tipo de solicitud</legend>
             <div className="checkout-choice-grid checkout-choice-grid-two">
-              <Choice checked={kind === 'ORDER'} name="order-kind" icon="cart" label="Pedido" description="Compra para entrega." onChange={() => { setKind('ORDER'); setPaymentVisible(false) }} />
-              <Choice checked={kind === 'RESERVATION'} name="order-kind" icon="reserved" label="Reserva" description={`Válida por ${storeConfig.commerce.reservationDurationHours} horas al confirmar.`} onChange={() => { setKind('RESERVATION'); setPaymentVisible(false) }} />
+              <Choice checked={kind === 'ORDER'} name="order-kind" icon="cart" label="Pedido" description="Compra para entrega." onChange={() => { setKind('ORDER'); setPaymentModalOpen(false) }} />
+              <Choice checked={kind === 'RESERVATION'} name="order-kind" icon="reserved" label="Reserva" description={`Válida por ${storeConfig.commerce.reservationDurationHours} horas al confirmar.`} onChange={() => { setKind('RESERVATION'); setPaymentModalOpen(false) }} />
             </div>
           </fieldset>
 
@@ -264,49 +286,68 @@ export function CheckoutPage() {
             </div>
           )}
 
-          {!paymentVisible && (
-            <button className="button" type="button" disabled={!details} onClick={() => setPaymentVisible(true)}>
-              Elegir modo de pago <Icon name="arrow-right" />
-            </button>
-          )}
-
-          {paymentVisible && details && (
-            <section className="payment-stage" id="modos-de-pago" aria-labelledby="payment-title">
-              <p className="eyebrow">Pago de demostración</p>
-              <h3 id="payment-title">Modo de pago</h3>
-              <div className="checkout-choice-grid payment-choice-grid">
-                {storeConfig.commerce.payments.methods.map((method) => (
-                  <Choice
-                    checked={paymentMethod === method}
-                    description={paymentContent[method].description}
-                    icon={paymentContent[method].icon}
-                    key={method}
-                    label={paymentContent[method].label}
-                    name="payment-method"
-                    onChange={() => setPaymentMethod(method)}
-                  />
-                ))}
-              </div>
-              <div className="payment-simulation">
-                {paymentMethod === 'QR' && <div className="demo-qr" aria-hidden="true"><span>QR</span></div>}
-                <div>
-                  <strong>{paymentContent[paymentMethod].label}</strong>
-                  <p>{paymentMethod === 'QR' ? 'Código visual de prueba; no procesa una transferencia.' : paymentMethod === 'CARD' ? 'Autorización simulada; no ingreses números ni datos bancarios.' : 'Redirección simulada; no se abrirá un servicio externo.'}</p>
-                  <p>Importe: {formatMoney(reportedTotalMinor)}</p>
-                </div>
-              </div>
-              <button className="button" type="button" disabled={sending || state.status !== 'AUTHENTICATED' || runtime.mode !== 'firebase'} onClick={() => void reportPayment()}>
-                {sending ? 'Registrando…' : 'Ya realicé el pago'}
-              </button>
-              <p className="demo-caption">Se registrará como pago reportado. La tienda validará el importe, el precio y el stock antes de confirmar.</p>
-            </section>
-          )}
+          <button className="button" type="button" disabled={!details} onClick={() => { setPaymentError(''); setPaymentModalOpen(true) }}>
+            Elegir modo de pago <Icon name="arrow-right" />
+          </button>
 
           {state.status !== 'AUTHENTICATED' && <p>Inicia sesión antes de reportar el pago. <Link className="text-link" to="/login">Mi cuenta</Link></p>}
           {runtime.mode === 'demo' && <p>El modo demostración no guarda solicitudes.</p>}
           <Link className="text-link" to="/carrito">Volver al carrito</Link>
         </aside>
       </div>
+
+      {paymentModalOpen && details && (
+        <div className="payment-modal-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget && !sending) setPaymentModalOpen(false) }}>
+          <section className="payment-modal" role="dialog" aria-modal="true" aria-labelledby="payment-modal-title">
+            <header className="payment-modal-header">
+              <div><p className="eyebrow">Pago de demostración</p><h2 id="payment-modal-title">Elige cómo pagar</h2></div>
+              <button ref={closePaymentRef} className="payment-modal-close" type="button" aria-label="Cerrar modos de pago" disabled={sending} onClick={() => setPaymentModalOpen(false)}>×</button>
+            </header>
+
+            <div className="payment-modal-total"><span>Total a reportar</span><strong>{formatMoney(reportedTotalMinor)}</strong></div>
+            <div className="checkout-choice-grid payment-modal-methods">
+              {storeConfig.commerce.payments.methods.map((method) => (
+                <Choice
+                  checked={paymentMethod === method}
+                  description={paymentContent[method].description}
+                  icon={paymentContent[method].icon}
+                  key={method}
+                  label={paymentContent[method].label}
+                  name="payment-method"
+                  onChange={() => { setPaymentMethod(method); setPaymentError('') }}
+                />
+              ))}
+            </div>
+
+            <div className="payment-simulation payment-modal-simulation">
+              {paymentMethod === 'QR' && (
+                <><div className="demo-qr" aria-hidden="true"><span>QR</span></div><div><strong>QR de demostración</strong><p>Escanea el código visual para simular la transferencia.</p><label>Código de operación<input disabled value="QR-DEMO-001" readOnly /></label></div></>
+              )}
+              {paymentMethod === 'CARD' && (
+                <fieldset className="payment-demo-fields" disabled>
+                  <legend>Tarjeta de demostración</legend>
+                  <label className="payment-demo-wide">Titular<input value="CLIENTE DE DEMOSTRACIÓN" readOnly /></label>
+                  <label className="payment-demo-wide">Número de tarjeta<input value="•••• •••• •••• 4242" readOnly /></label>
+                  <label>Vencimiento<input value="12/30" readOnly /></label>
+                  <label>CVV<input value="•••" readOnly /></label>
+                </fieldset>
+              )}
+              {paymentMethod === 'PAYPAL' && (
+                <div className="payment-paypal-demo"><span className="payment-wallet-icon"><Icon name="wallet" /></span><div><strong>PayPal de demostración</strong><p>La conexión externa está deshabilitada en esta base.</p><label>Cuenta de prueba<input disabled value="demo@paypal.example" readOnly /></label></div></div>
+              )}
+            </div>
+
+            {paymentError && <p className="payment-modal-error" role="alert">{paymentError}</p>}
+            <div className="payment-modal-actions">
+              <button className="text-button" type="button" disabled={sending} onClick={() => setPaymentModalOpen(false)}>Volver</button>
+              <button className="button" type="button" disabled={sending || state.status !== 'AUTHENTICATED' || runtime.mode !== 'firebase'} onClick={() => void reportPayment()}>
+                {sending ? 'Registrando…' : 'Ya realicé el pago'}
+              </button>
+            </div>
+            <p className="demo-caption">Se registrará como pago reportado. La tienda validará el importe, el precio y el stock antes de confirmar.</p>
+          </section>
+        </div>
+      )}
     </div>
   )
 }

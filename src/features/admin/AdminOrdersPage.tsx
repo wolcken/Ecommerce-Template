@@ -4,6 +4,8 @@ import { storeConfig } from '../../config/store.config'
 import { formatMoney } from '../../shared/utils/formatMoney'
 import { availableAdminActions, orderStatusLabel, paymentMethodLabel } from '../orders/order.logic'
 import type { AdminOrderAction, CustomerOrder, OrderKind, OrderStatus } from '../orders/order.models'
+import type { AdminCategory, AdminProduct, CatalogAdminService } from './admin.models'
+import { commercialAmounts, type CommercialAmounts } from './order-commercial.logic'
 
 const actionLabels: Record<AdminOrderAction, string> = {
   CONFIRM: 'Validar pago y comprometer stock',
@@ -19,8 +21,36 @@ function date(value: string) {
   return new Intl.DateTimeFormat('es-BO', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value))
 }
 
+function percent(basisPoints: number) {
+  return new Intl.NumberFormat('es-BO', { maximumFractionDigits: 2 }).format(basisPoints / 100) + ' %'
+}
+
+async function loadAdminCatalog(service: CatalogAdminService) {
+  const products: AdminProduct[] = []
+  const categories: AdminCategory[] = []
+  let productCursor: string | undefined
+  let categoryCursor: string | undefined
+  do {
+    const page = await service.listProducts(productCursor)
+    products.push(...page.items)
+    productCursor = page.nextCursor ?? undefined
+  } while (productCursor)
+  do {
+    const page = await service.listCategories(categoryCursor)
+    categories.push(...page.items)
+    categoryCursor = page.nextCursor ?? undefined
+  } while (categoryCursor)
+  return { products, categories }
+}
+
+function amountsFor(product: AdminProduct | undefined, quantity: number): CommercialAmounts | null {
+  if (!product) return null
+  try { return commercialAmounts(product, quantity) } catch { return null }
+}
+
 export function AdminOrdersPage() {
   const [orders, setOrders] = useState<CustomerOrder[]>([])
+  const [catalog, setCatalog] = useState<{ products: AdminProduct[]; categories: AdminCategory[] }>({ products: [], categories: [] })
   const [notes, setNotes] = useState<Record<string, string>>({})
   const [loading, setLoading] = useState(runtime.mode === 'firebase')
   const [pending, setPending] = useState<string | null>(null)
@@ -31,7 +61,11 @@ export function AdminOrdersPage() {
 
   function load() {
     if (runtime.mode !== 'firebase') return
-    runtime.orders.listAdmin().then((items) => { setOrders(items); setError(null) })
+    Promise.all([runtime.orders.listAdmin(), loadAdminCatalog(runtime.admin)]).then(([items, adminCatalog]) => {
+      setOrders(items)
+      setCatalog(adminCatalog)
+      setError(null)
+    })
       .catch((caught) => setError(caught instanceof Error ? caught.message : 'No se pudieron cargar las solicitudes.'))
       .finally(() => setLoading(false))
   }
@@ -57,7 +91,12 @@ export function AdminOrdersPage() {
     if (statusFilter !== 'ALL' && order.status !== statusFilter) return false
     if (kindFilter !== 'ALL' && order.kind !== kindFilter) return false
     if (!term) return true
-    return [order.id, order.number ?? '', order.customer.firstName, order.customer.lastName, order.customer.phone, order.billing.documentNumber, order.payment?.reference ?? '']
+    const productTerms = order.requestedItems.flatMap((item) => {
+      const product = catalog.products.find((entry) => entry.id === item.productId)
+      const category = catalog.categories.find((entry) => entry.id === product?.categoryId)
+      return [item.productId, product?.name ?? '', product?.sku ?? '', category?.name ?? '']
+    })
+    return [order.id, order.number ?? '', order.customer.firstName, order.customer.lastName, order.customer.phone, order.billing.documentNumber, order.payment?.reference ?? '', ...productTerms]
       .some((value) => value.toLocaleLowerCase('es').includes(term))
   })
 
@@ -82,6 +121,19 @@ export function AdminOrdersPage() {
         {filtered.map((order) => {
           const pickupId = order.delivery.method === 'PICKUP' ? order.delivery.locationId : null
           const pickup = pickupId ? storeConfig.commerce.pickupLocations.find((location) => location.id === pickupId) : null
+          const lines = order.requestedItems.map((request) => {
+            const product = catalog.products.find((item) => item.id === request.productId)
+            const category = catalog.categories.find((item) => item.id === product?.categoryId)
+            const confirmed = order.confirmedItems.find((item) => item.productId === request.productId)
+            return { request, product, category, confirmed, amounts: amountsFor(product, request.quantity) }
+          })
+          const completeCommercialData = lines.every((line) => line.amounts)
+          const commercialTotals = lines.reduce((total, line) => ({
+            costMinor: total.costMinor + (line.amounts?.costMinor ?? 0),
+            profitMinor: total.profitMinor + (line.amounts?.profitMinor ?? 0),
+            taxMinor: total.taxMinor + (line.amounts?.taxMinor ?? 0),
+            saleMinor: total.saleMinor + (line.amounts?.saleMinor ?? 0),
+          }), { costMinor: 0, profitMinor: 0, taxMinor: 0, saleMinor: 0 })
           return (
             <article className="order-card admin-order-card" key={order.id}>
               <header>
@@ -105,7 +157,41 @@ export function AdminOrdersPage() {
                 </div>
               </div>
               <p>Enviada el {date(order.createdAt)}</p>
-              <ul>{order.confirmedItems.length ? order.confirmedItems.map((item) => <li key={item.productId}>{item.name} — {formatMoney(item.lineTotalMinor)} × {item.quantity}</li>) : order.requestedItems.map((item) => <li key={item.productId}>{item.productId} × {item.quantity}</li>)}</ul>
+              <section className="admin-order-products" aria-label="Desglose comercial de productos">
+                <h3>Productos y desglose comercial</h3>
+                <p className="commercial-context">Costo, ganancia, recargo y disponibilidad según la configuración privada actual del catálogo.</p>
+                {lines.map(({ request, product, category, confirmed, amounts }) => (
+                  <article className="admin-order-product" key={request.productId}>
+                    <header>
+                      <div><strong>{confirmed?.name ?? product?.name ?? request.productId}</strong><span>{product?.sku ?? confirmed?.sku ?? 'SKU no disponible'}</span></div>
+                      <span className="product-type-pill">{category?.name ?? 'Categoría no disponible'}</span>
+                    </header>
+                    {product && amounts ? (
+                      <>
+                        <dl className="admin-commercial-grid">
+                          <div><dt>Cantidad</dt><dd>{request.quantity}</dd></div>
+                          <div><dt>Costo unitario</dt><dd>{formatMoney(product.costMinor)}</dd></div>
+                          <div><dt>Ganancia unitaria</dt><dd>{formatMoney(product.profitMinor)} <small>({percent(amounts.profitRateBps)})</small></dd></div>
+                          <div><dt>Base antes del recargo</dt><dd>{formatMoney(product.costMinor + product.profitMinor)}</dd></div>
+                          <div><dt>Recargo tributario</dt><dd>{formatMoney(product.priceMinor - product.costMinor - product.profitMinor)} <small>({percent(product.billingRateBps)})</small></dd></div>
+                          <div><dt>Precio de venta unitario</dt><dd>{formatMoney(product.priceMinor)}</dd></div>
+                          <div><dt>Disponible actualmente</dt><dd>{product.onHand - product.committed}</dd></div>
+                          <div><dt>Venta total de la línea</dt><dd>{formatMoney(amounts.saleMinor)}</dd></div>
+                        </dl>
+                        {confirmed && confirmed.unitPriceMinor !== product.priceMinor && <p className="commercial-price-note">Precio confirmado en la solicitud: {formatMoney(confirmed.unitPriceMinor)} por unidad.</p>}
+                      </>
+                    ) : <p className="commercial-price-note">No se encontró el desglose privado actual de este producto.</p>}
+                  </article>
+                ))}
+                {completeCommercialData && (
+                  <div className="admin-commercial-totals">
+                    <div><span>Costo de productos</span><strong>{formatMoney(commercialTotals.costMinor)}</strong></div>
+                    <div><span>Ganancia prevista</span><strong>{formatMoney(commercialTotals.profitMinor)}</strong></div>
+                    <div><span>Recargo tributario</span><strong>{formatMoney(commercialTotals.taxMinor)}</strong></div>
+                    <div><span>Venta de productos</span><strong>{formatMoney(commercialTotals.saleMinor)}</strong></div>
+                  </div>
+                )}
+              </section>
               {order.totals && <p className="order-total">Total confirmado: <strong>{formatMoney(order.totals.totalMinor)}</strong></p>}
               {order.reservedUntil && <p>Vence el {date(order.reservedUntil)}.</p>}
               {availableAdminActions(order).length > 0 && (
