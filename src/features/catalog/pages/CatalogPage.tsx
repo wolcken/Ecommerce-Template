@@ -22,7 +22,7 @@ export function CatalogPage() {
         <span>{visibleProducts.length} {visibleProducts.length === 1 ? 'producto' : 'productos'}</span>
       </div>
       <p role="status">{visibleProducts.length === 0 ? 'Todavía no hay productos publicados aquí.' : ''}</p><div className="product-grid">{visibleProducts.map(product => <ProductCard key={product.id} product={product} />)}</div>
-      <p className="demo-caption">Las compras y reservas todavía no están habilitadas.</p>
+      <p className="demo-caption">Los precios publicados incluyen el recargo tributario. La disponibilidad se valida al confirmar.</p>
     </div>
   )
 }

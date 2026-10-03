@@ -13,8 +13,10 @@ export function ProductCard({ product }: { product: CatalogProduct }) {
           <ProductMedia product={product} />
           <span className="product-arrow" aria-hidden="true">↗</span>
         </div>
-        <p className="product-category">{categories.find(c => c.id === product.categoryId)?.name}</p>
-        <div className="product-line"><h3>{product.name}</h3><span>{formatMoney(product.priceMinor)}</span></div>
+        <div className="product-card-copy">
+          <div className="product-card-meta"><p className="product-category">{categories.find(c => c.id === product.categoryId)?.name}</p><span className={`availability-dot${product.availability === 'UNAVAILABLE' ? ' availability-dot-off' : ''}`}>{product.availability === 'UNAVAILABLE' ? 'Agotado' : 'Disponible'}</span></div>
+          <div className="product-line"><h3>{product.name}</h3><span>{formatMoney(product.priceMinor)}</span></div>
+        </div>
       </Link>
     </article>
   )

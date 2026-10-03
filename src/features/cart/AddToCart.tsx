@@ -16,6 +16,6 @@ export function AddToCart({product}:{product:CatalogProduct}) {
     <button className="button" disabled={!cart.ready||unavailable} onClick={add}><Icon name="cart" />{unavailable?'Sin disponibilidad':'Agregar al carrito'}</button>
     <p role="status">{message}</p>
     {message && <Link className="text-link icon-action" to="/carrito">Ver carrito <Icon name="arrow-right" /></Link>}
-    <p>Agregar al carrito no reserva existencias. Los pedidos aún no se pueden confirmar.</p>
+    <p>Agregar al carrito no reserva existencias. El precio y el stock se validan al confirmar.</p>
   </div>
 }
