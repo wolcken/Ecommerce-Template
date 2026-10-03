@@ -295,6 +295,8 @@ export function createFirestoreOrderService(
           if (!productSnapshot.exists() || !pricingSnapshot.exists() || !inventorySnapshot.exists()) {
             throw new Error('Uno de los productos ya no está disponible.')
           }
+          const categorySnapshot = await transaction.get(doc(db, 'categories', String(productSnapshot.data().categoryId)))
+          if (!categorySnapshot.exists()) throw new Error('No se encontró la categoría de uno de los productos.')
           return {
             request: item,
             productRef,
@@ -302,11 +304,13 @@ export function createFirestoreOrderService(
             product: productSnapshot.data(),
             pricing: pricingSnapshot.data(),
             inventory: inventorySnapshot.data(),
+            category: categorySnapshot.data(),
           }
         }),
       )
 
       let itemsMinor = 0
+      const commercialItems: Array<Record<string, unknown>> = []
       const confirmedItems: OrderItemSnapshot[] = rows.map((row) => {
         if (row.product.active !== true || row.product.availability !== 'AVAILABLE') {
           throw new Error(`${row.product.name ?? 'Un producto'} no está disponible.`)
@@ -331,6 +335,19 @@ export function createFirestoreOrderService(
           throw new Error('El total excede el límite permitido.')
         }
         itemsMinor += lineTotalMinor
+        commercialItems.push({
+          productId: row.request.productId,
+          sku: row.product.sku,
+          name: row.product.name,
+          categoryId: row.product.categoryId,
+          categoryName: row.category.name,
+          quantity: row.request.quantity,
+          unitCostMinor: calculated.costMinor,
+          unitProfitMinor: calculated.profitMinor,
+          unitTaxMinor: calculated.billingMinor,
+          unitSaleMinor: calculated.saleMinor,
+          priceVersion: row.product.priceVersion,
+        })
         return {
           productId: row.request.productId,
           sku: row.product.sku,
@@ -379,6 +396,16 @@ export function createFirestoreOrderService(
         version: 1,
         createdAt: now,
         updatedAt: now,
+      })
+      transaction.set(doc(db, 'orderCommercialSnapshots', orderId), {
+        orderId,
+        currency: 'BOB',
+        items: commercialItems,
+        itemsMinor,
+        shippingMinor,
+        totalMinor,
+        capturedAt: now,
+        version: 1,
       })
       transaction.update(orderRef, {
         status: 'CONFIRMED',

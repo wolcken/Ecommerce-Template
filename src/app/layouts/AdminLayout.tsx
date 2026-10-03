@@ -19,6 +19,7 @@ export function AdminLayout() {
           <NavLink to="/admin/productos"><Icon name="products" />Productos</NavLink>
           <NavLink to="/admin/categorias"><Icon name="categories" />Categorías</NavLink>
           <NavLink to="/admin/solicitudes"><Icon name="orders" />Solicitudes</NavLink>
+          <NavLink to="/admin/ventas"><Icon name="receipt" />Ventas</NavLink>
         </nav>
         <NavLink className="back-link nav-item" to="/"><Icon name="arrow-left" />Volver a la tienda</NavLink>
       </aside>

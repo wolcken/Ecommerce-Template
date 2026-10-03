@@ -49,6 +49,7 @@ export function AdminDashboard() {
         <Link className="stat-card stat-card-primary" to="/admin/productos"><span className="stat-label"><Icon name="available" />Disponible</span><strong>{stockValue(inventory?.available)}</strong><span>Unidades que puedes confirmar <Icon name="arrow-right" /></span></Link>
         <Link className="stat-card" to="/admin/categorias"><span className="stat-label"><Icon name="categories" />Categorías publicadas</span><strong>{catalogLoading || catalogError ? '—' : categories.length}</strong><span>Administrar categorías <Icon name="arrow-right" /></span></Link>
         <Link className="stat-card" to="/admin/solicitudes"><span className="stat-label"><Icon name="orders" />Operación comercial</span><strong><Icon className="stat-arrow" name="arrow-right" /></strong><span>Revisar solicitudes</span></Link>
+        <Link className="stat-card" to="/admin/ventas"><span className="stat-label"><Icon name="receipt" />Ventas y ganancias</span><strong><Icon className="stat-arrow" name="arrow-right" /></strong><span>Consultar informes <Icon name="arrow-right" /></span></Link>
       </div>
       <section className="admin-next">
         <h2>Cómo leer el inventario.</h2>

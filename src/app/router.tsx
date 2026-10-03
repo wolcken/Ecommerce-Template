@@ -2,6 +2,7 @@ import { Route, Routes } from 'react-router'
 import { AdminEditor } from '../features/admin/AdminEditor'
 import { AdminOrdersPage } from '../features/admin/AdminOrdersPage'
 import { AdminDashboard } from '../features/admin/AdminPages'
+import { AdminSalesReportPage } from '../features/admin/AdminSalesReportPage'
 import { AccountPage } from '../features/auth/AccountPage'
 import { AuthPage } from '../features/auth/AuthPage'
 import { RequireAdmin } from '../features/auth/RequireAdmin'
@@ -41,6 +42,7 @@ export function AppRoutes() {
           <Route path="productos" element={<AdminEditor key="products" kind="products" />} />
           <Route path="categorias" element={<AdminEditor key="categories" kind="categories" />} />
           <Route path="solicitudes" element={<AdminOrdersPage />} />
+          <Route path="ventas" element={<AdminSalesReportPage />} />
           <Route path="*" element={<NotFoundPage />} />
         </Route>
       </Route>

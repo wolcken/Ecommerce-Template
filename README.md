@@ -121,5 +121,6 @@ Configurar el hosting de la SPA para devolver index.html en rutas internas.
 - [Modal de pago y detalle comercial](docs/phase-12-payment-modal-commercial-detail.md)
 - [Imágenes de productos con Cloudinary](docs/phase-13-cloudinary-images.md)
 - [Experiencia visual del catálogo y producto](docs/phase-14-catalog-product-ux.md)
+- [Informe administrativo de ventas y ganancias](docs/phase-15-sales-reports.md)
 
 Siguiente bloque: reemplazar los datos provisionales de empresa y tienda, integrar un proveedor de pago verificable y optimizar la carga inicial antes de publicar Hosting.

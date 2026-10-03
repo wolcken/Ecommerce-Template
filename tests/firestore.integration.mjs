@@ -1,6 +1,7 @@
 import {createFirestoreProfileService} from '../src/infrastructure/firebase/profile.ts'
 import {createFirestoreOrderService} from '../src/infrastructure/firebase/orders.ts'
 import {createFirestoreAdminService} from '../src/infrastructure/firebase/admin.ts'
+import {createFirestoreSalesReportService} from '../src/infrastructure/firebase/salesReports.ts'
 import test,{before,after} from 'node:test'
 import assert from 'node:assert/strict'
 import {readFile} from 'node:fs/promises'
@@ -163,10 +164,23 @@ test('customer submits a request and ADMIN commits then releases stock',async()=
  const purchaseConfirmed=await adminOrders.transition({orderId:purchase.id,expectedVersion:1,action:'CONFIRM',note:''})
  assert.equal(purchaseConfirmed.totals.shippingMinor,2000)
  assert.equal(purchaseConfirmed.totals.totalMinor,605200)
+ const commercialSnapshot=(await getDoc(doc(adminDb,'orderCommercialSnapshots',purchase.id))).data()
+ assert.equal(commercialSnapshot.items[0].unitCostMinor,500000)
+ assert.equal(commercialSnapshot.items[0].unitProfitMinor,20000)
+ assert.equal(commercialSnapshot.items[0].unitTaxMinor,83200)
+ await assertFails(getDoc(doc(customerDb,'orderCommercialSnapshots',purchase.id)))
  const completed=await adminOrders.transition({orderId:purchase.id,expectedVersion:purchaseConfirmed.version,action:'COMPLETE',note:'Entregado.'})
  assert.equal(completed.status,'COMPLETED')
  const finalInventory=(await getDoc(doc(adminDb,'inventory','adapter-laptop'))).data()
  assert.equal(finalInventory.onHand,4)
  assert.equal(finalInventory.committed,0)
  assert.equal((await getDoc(doc(adminDb,'stockCommitments',purchase.id))).data().status,'CONSUMED')
+ const reports=createFirestoreSalesReportService(adminDb,()=> 'admin-user')
+ const from=new Date(Date.now()-86_400_000).toISOString()
+ const until=new Date(Date.now()+86_400_000).toISOString()
+ const sales=await reports.list({from,until})
+ assert.equal(sales.orders.length,1)
+ assert.equal(sales.orders[0].items[0].costMinor,500000)
+ assert.equal(sales.orders[0].items[0].profitMinor,20000)
+ assert.equal(sales.orders[0].items[0].taxMinor,83200)
 })
