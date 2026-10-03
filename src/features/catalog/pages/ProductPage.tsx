@@ -31,7 +31,7 @@ export function ProductPage() {
             <span><Icon name="shield" />Precio validado al confirmar</span>
           </div>
           <AddToCart key={product.id} product={product} />
-          <Link className="text-link icon-action" to="/productos"><Icon name="arrow-left" />Seguir explorando</Link>
+          <Link className="button button-secondary detail-explore-action" to="/productos"><Icon name="arrow-left" />Seguir explorando</Link>
         </div>
       </section>
     </div>
