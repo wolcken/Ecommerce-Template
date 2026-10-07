@@ -506,28 +506,6 @@ Client-specific configuration should remain outside the public template.
 
 ---
 
-## Development Documentation
-
-The repository contains implementation notes organized by development phase:
-
-- [Domain & Pricing](docs/phase-2-domain.md)
-- [Firebase Preparation](docs/phase-3-firebase.md)
-- [Initial Administration](docs/phase-4-admin.md)
-- [Cart & Draft](docs/phase-5-cart.md)
-- [Spark Architecture](docs/phase-6-readiness.md)
-- [Orders, Reservations & Inventory](docs/phase-7-orders.md)
-- [Profile, Delivery & Hosting Preparation](docs/phase-8-profile-hosting.md)
-- [Visible Session & Admin Inventory](docs/phase-9-admin-ux.md)
-- [Navigation & Electronic Receipt](docs/phase-10-invoice-ux.md)
-- [Reported Payments & Scope Delivery](docs/phase-11-simulated-payments.md)
-- [Payment Modal & Commercial Detail](docs/phase-12-payment-modal-commercial-detail.md)
-- [Cloudinary Product Images](docs/phase-13-cloudinary-images.md)
-- [Catalog & Product UX](docs/phase-14-catalog-product-ux.md)
-- [Administrative Sales & Profit Reports](docs/phase-15-sales-reports.md)
-- [Cart Action Experience](docs/phase-16-cart-ux.md)
-
----
-
 ## Security Notes
 
 Before using the template in production:
