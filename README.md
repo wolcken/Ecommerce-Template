@@ -1,13 +1,379 @@
-# ecommerce-base
+# Ecommerce Template
 
-Base reutilizable de comercio electrónico con Vite, React, TypeScript y Firebase Spark. Gestor: Yarn 1.22.22. Entorno validado con Node 24.
+Reusable e-commerce template built with **Vite, React, TypeScript and Firebase**, designed to provide a solid starting point for catalog, authentication, cart, checkout, reservations, inventory and administration workflows.
 
-## Desarrollo
+The project is prepared to work with the **Firebase Spark plan**, using Firebase Authentication and Cloud Firestore, while product images are handled through Cloudinary.
+
+> **Template scope**
+>
+> This repository is a reusable technical template. Client-specific implementations, credentials, branding and production data are maintained separately.
+
+---
+
+## Overview
+
+The template provides a complete foundation for small and medium e-commerce implementations without requiring a custom backend from the beginning.
+
+It includes:
+
+- Public product catalog
+- Categories and product detail pages
+- Local persistent cart
+- User authentication
+- Customer profile
+- Orders and reservations
+- Private customer request history
+- Administrative product and category management
+- Inventory control
+- Firestore transactions
+- Role-based access
+- Cloudinary image uploads
+- Commercial calculations
+- Simulated payment flows
+- Administrative sales and profit reporting
+
+The architecture intentionally separates public catalog data from private commercial information such as costs, profit margins and administrative details.
+
+---
+
+## Tech Stack
+
+### Frontend
+
+- Vite
+- React
+- TypeScript
+- Responsive CSS architecture
+
+### Cloud
+
+- Firebase Authentication
+- Cloud Firestore
+- Firebase Emulator Suite
+
+### Images
+
+- Cloudinary
+
+### Tooling
+
+- Yarn `1.22.22`
+- Node.js `24` validated
+- TypeScript strict validation
+- Linting
+- Unit / integration checks
+- Hosting validation
+- Production builds
+
+---
+
+## Architecture
+
+```mermaid
+flowchart TB
+
+    VISITOR["Visitor"]
+    USER["Authenticated User"]
+    ADMIN["Administrator"]
+
+    APP["React / Vite Application"]
+
+    AUTH["Firebase Authentication"]
+    FIRESTORE["Cloud Firestore"]
+    CLOUDINARY["Cloudinary"]
+
+    VISITOR --> APP
+    USER --> APP
+    ADMIN --> APP
+
+    APP --> AUTH
+    APP --> FIRESTORE
+    APP --> CLOUDINARY
+```
+
+The project does not require:
+
+- Firebase Cloud Functions
+- Firebase Storage
+- A Firebase billing account for the base architecture
+
+Cloudinary is used for public product images.
+
+---
+
+## User Roles
+
+### Visitor
+
+Visitors can:
+
+- Browse the active catalog
+- Explore categories
+- View product details
+- Maintain a local cart
+
+### User
+
+Authenticated users can:
+
+- Manage their profile
+- Submit orders
+- Submit reservations
+- Reuse saved customer information
+- Review their private request history
+
+### Admin
+
+Administrators can:
+
+- Manage products
+- Manage categories
+- Review customer requests
+- Filter commercial requests
+- Manage inventory
+- Review private commercial data
+- Confirm orders and reservations
+- Access sales and profit information
+
+Administrative access is enforced through Firebase authorization rules and admin claims.
+
+---
+
+## Catalog & Data Privacy
+
+The public catalog exposes only the information required by customers.
+
+Private commercial fields remain restricted.
+
+Examples of private data:
+
+- Product cost
+- Profit amount
+- Internal commercial calculations
+- Inventory management information
+- Customer NIT
+- Administrative totals
+
+Only administrators can write catalog data.
+
+Sensitive commercial values must never be stored in public documents or exposed through public `VITE_*` environment variables.
+
+---
+
+## Pricing Model
+
+The default pricing model is:
+
+```text
+Final Price = Cost + Fixed Profit + Percentage Surcharge
+```
+
+The initial surcharge is **16% applied to cost + profit**.
+
+Example:
+
+```text
+Cost:          Bs 5,000
+Fixed profit:  Bs   200
+Subtotal:      Bs 5,200
+16% surcharge: Bs   832
+-----------------------
+Final price:   Bs 6,032
+```
+
+The percentage and store behavior can be adapted during implementation.
+
+---
+
+## Checkout Model
+
+Checkout creates a persistent commercial request instead of trusting prices calculated by the browser.
+
+```text
+Customer
+   ↓
+Cart
+   ↓
+Authenticated Checkout
+   ↓
+Firestore Request
+   ↓
+Admin Review
+   ↓
+Recalculation / Validation
+   ↓
+Confirmation
+```
+
+The administrator recalculates and validates commercial values before confirmation.
+
+This prevents the client application from becoming the authoritative source for pricing.
+
+---
+
+## Orders & Reservations
+
+The template supports both orders and reservations.
+
+### Orders
+
+Orders are stored as authenticated customer requests and managed through the administrative interface.
+
+### Reservations
+
+The default reservation workflow:
+
+- Requires administrative confirmation
+- Commits inventory after confirmation
+- Uses a 24-hour reservation period
+- Can be manually expired from the admin panel
+
+The reservation policy can be customized for each implementation.
+
+---
+
+## Payment Demonstration
+
+QR, card and PayPal options are currently presented through a **demonstration modal**.
+
+The template does **not** capture real banking or card information.
+
+A production implementation should integrate a verified payment provider and validate payment status through a trusted server-side or provider-controlled workflow.
+
+---
+
+## Inventory
+
+Inventory changes are handled through Firestore transactions where required.
+
+The administrative request view can expose:
+
+- Category
+- Cost
+- Profit
+- Surcharge
+- Final price
+- Availability
+- Quantities
+- Commercial totals
+
+These values remain private to administrative workflows.
+
+---
+
+## Routes
+
+| Route | Purpose |
+|---|---|
+| `/` | Home |
+| `/productos` | Product catalog |
+| `/categorias/:slug` | Category |
+| `/productos/:slug` | Product detail |
+| `/carrito` | Persistent local cart |
+| `/checkout` | Authenticated order / reservation submission |
+| `/cuenta` | Private customer profile |
+| `/mis-solicitudes` | Customer request history |
+| `/login` | Sign in |
+| `/registro` | Registration |
+| `/recuperar-acceso` | Account recovery |
+| `/admin` | Admin dashboard |
+| `/admin/productos` | Product management |
+| `/admin/categorias` | Category management |
+| `/admin/solicitudes` | Request management |
+
+Unknown routes render the application 404 page.
+
+When deploying as an SPA, hosting must redirect internal application routes to `index.html`.
+
+---
+
+## Project Structure
+
+Main customization areas:
+
+```text
+src/
+├── config/
+│   └── store.config.ts
+│
+├── features/
+│   ├── catalog/
+│   ├── admin/
+│   ├── cart/
+│   └── orders/
+│
+├── infrastructure/
+│   ├── firebase/
+│   └── cloudinary/
+│
+└── styles/
+```
+
+### `src/config/store.config.ts`
+
+Central store configuration:
+
+- Brand
+- Contact information
+- Pickup
+- Shipping
+- Reservation settings
+- Theme
+
+### `src/features/catalog`
+
+Public catalog and product presentation.
+
+### `src/features/admin`
+
+Administrative workflows.
+
+### `src/features/cart`
+
+Local cart state for visitors and authenticated users.
+
+### `src/features/orders`
+
+Orders, reservations, customer history and commercial statuses.
+
+### `src/infrastructure/firebase`
+
+Authentication and Firestore adapters.
+
+### `src/infrastructure/cloudinary`
+
+Image validation and Cloudinary upload integration.
+
+### `src/styles`
+
+Responsive visual system and application styling.
+
+---
+
+## Getting Started
+
+### Requirements
+
+- Node.js `24`
+- Yarn `1.22.22`
+
+Install dependencies:
 
 ```sh
 yarn install --frozen-lockfile
+```
+
+Start the development server:
+
+```sh
 yarn dev
 ```
+
+---
+
+## Quality Checks
+
+Available validation commands:
 
 ```sh
 yarn lint
@@ -18,110 +384,217 @@ yarn test:hosting
 yarn build
 ```
 
-## Arquitectura Spark
+These checks should be executed before creating a production implementation from the template.
 
-La aplicación usa Firebase Authentication, una única base Firestore y Cloudinary para imágenes públicas. No despliega Cloud Functions ni Firebase Storage y no requiere asociar una cuenta de facturación de Firebase.
+---
 
-- Visitantes: catálogo activo y carrito local.
-- USER: perfil privado, envío de pedidos/reservas y consulta de sus solicitudes.
-- ADMIN: catálogo, filtros de solicitudes e inventario mediante transacciones Firestore.
-- Reglas: solo ADMIN escribe catálogo; costos e inventario nunca son públicos.
-- Imágenes: carga administrativa directa a Cloudinary con un preset unsigned, vista previa local y URL HTTPS manual como alternativa.
-- Checkout: solicitud persistida sin aceptar precios del navegador; el ADMIN recalcula y confirma manualmente.
-- Pagos: QR, tarjeta y PayPal se presentan en un modal de demostración sin capturar datos bancarios.
-- Solicitudes ADMIN: muestran categoría, costo, ganancia, recargo, precio, disponibilidad y totales desde datos privados.
-- Reservas: duran 24 horas desde la confirmación, comprometen stock y vencen manualmente en el panel ADMIN.
+## Firebase Setup
 
-El precio usa costo + ganancia fija + 16 % inicial sobre esa suma. Ejemplo acordado: Bs 5000 + Bs 200 + 16 % = Bs 6032. Costos, ganancias y NIT no se colocan en variables VITE_* ni en documentos públicos.
+Copy the example environment file:
 
-## Firebase
+```sh
+cp .env.example .env.local
+```
 
-Copiar .env.example a .env.local, colocar la configuración web pública y usar:
+Add the Firebase web configuration for your project.
+
+Then validate the integration:
 
 ```sh
 yarn firebase:check
 yarn firebase:smoke
 ```
 
-Las reglas e índices del proyecto ecommerce-base-62b9c están publicados. Para volver a publicarlos:
+### Firestore Rules & Indexes
+
+Deploy the template rules and indexes to your own Firebase project:
 
 ```sh
-yarn firebase:deploy --only firestore:rules,firestore:indexes --project ecommerce-base-62b9c --non-interactive
+yarn firebase:deploy   --only firestore:rules,firestore:indexes   --project <PROJECT_ID>   --non-interactive
 ```
 
-La cuenta ADMIN se asigna fuera de la aplicación, con coincidencia exacta entre UID y correo:
+Do not reuse the Firebase project from another implementation.
+
+Each deployment created from this template should use its own Firebase project and configuration.
+
+---
+
+## Admin Access
+
+Administrator privileges are assigned outside the application.
+
+The admin UID and email must match exactly.
 
 ```sh
-yarn firebase:admin --project ID --uid UID --email CORREO
-yarn firebase:admin --project ID --uid UID --email CORREO --grant
+yarn firebase:admin --project <PROJECT_ID> --uid <UID> --email <EMAIL>
 ```
 
-Después de modificar claims, cerrar y volver a iniciar sesión.
+Grant the corresponding admin claim:
 
-Para la carga de imágenes, completar también las variables públicas de Cloudinary. Nunca colocar `API_SECRET` en una variable `VITE_*`:
+```sh
+yarn firebase:admin   --project <PROJECT_ID>   --uid <UID>   --email <EMAIL>   --grant
+```
+
+After changing claims, sign out and sign in again so the user session receives the updated authorization state.
+
+---
+
+## Cloudinary Setup
+
+The template uses Cloudinary for public product images.
+
+Required public variables:
 
 ```env
-VITE_CLOUDINARY_CLOUD_NAME=nombre-del-cloud
-VITE_CLOUDINARY_UPLOAD_PRESET=preset-unsigned
+VITE_CLOUDINARY_CLOUD_NAME=your-cloud-name
+VITE_CLOUDINARY_UPLOAD_PRESET=your-unsigned-preset
 ```
 
-Para pruebas de reglas:
+Never expose a Cloudinary `API_SECRET` through a `VITE_*` environment variable.
+
+The current template supports:
+
+- Administrative image upload
+- Local preview
+- HTTPS image URL fallback
+
+For production deployments, review the security restrictions of the upload preset and consider a signed upload workflow when stronger upload controls are required.
+
+---
+
+## Local Firebase Emulators
+
+Run Firebase emulators:
+
+```sh
+yarn emulators
+```
+
+In another terminal, start the application connected to the local Firebase environment:
+
+```sh
+yarn dev:emulator
+```
+
+Rule integration tests can be executed with:
 
 ```sh
 yarn test:integration
 ```
 
-Para una interfaz conectada a Auth y Firestore locales:
+---
 
-```sh
-yarn emulators
-# otra terminal
-yarn dev:emulator
-```
+## Customization
 
-## Rutas
+A new implementation should normally customize:
 
-- / — inicio
-- /productos — catálogo
-- /categorias/:slug — categoría
-- /productos/:slug — detalle
-- /carrito — carrito persistente en el navegador
-- /checkout — envío autenticado de pedido o reserva
-- /cuenta — perfil privado y datos reutilizables
-- /mis-solicitudes — historial privado del cliente
-- /login, /registro y /recuperar-acceso — autenticación
-- /admin, /admin/productos, /admin/categorias y /admin/solicitudes — administración protegida
-- Cualquier ruta inexistente — página 404
+- Brand identity
+- Store information
+- Contact information
+- Shipping rules
+- Pickup options
+- Reservation duration
+- Product categories
+- Pricing model
+- Firebase project
+- Cloudinary configuration
+- Administrative users
+- Payment provider
+- Visual theme
 
-Configurar el hosting de la SPA para devolver index.html en rutas internas.
+Client-specific configuration should remain outside the public template.
 
-## Personalización
+---
 
-- src/config/store.config.ts: marca, contacto, recojo, envío, reservas y tema.
-- src/features/catalog: catálogo público.
-- src/features/admin: administración.
-- src/features/cart: carrito local por visitante/cuenta.
-- src/features/orders: solicitudes, historial y estados comerciales.
-- src/infrastructure/firebase: adaptadores de Authentication y Firestore.
-- src/infrastructure/cloudinary: validación y carga pública de imágenes.
-- src/styles: diseño adaptable.
+## Development Documentation
 
-## Documentación por fases
+The repository contains implementation notes organized by development phase:
 
-- [Dominio y precios](docs/phase-2-domain.md)
-- [Preparación Firebase](docs/phase-3-firebase.md)
-- [Administración inicial](docs/phase-4-admin.md)
-- [Carrito y borrador](docs/phase-5-cart.md)
-- [Arquitectura Spark](docs/phase-6-readiness.md)
-- [Pedidos, reservas e inventario](docs/phase-7-orders.md)
-- [Perfil, entrega y preparación de Hosting](docs/phase-8-profile-hosting.md)
-- [Sesión visible e inventario administrativo](docs/phase-9-admin-ux.md)
-- [Navegación y comprobante electrónico](docs/phase-10-invoice-ux.md)
-- [Pagos reportados y entrega por alcance](docs/phase-11-simulated-payments.md)
-- [Modal de pago y detalle comercial](docs/phase-12-payment-modal-commercial-detail.md)
-- [Imágenes de productos con Cloudinary](docs/phase-13-cloudinary-images.md)
-- [Experiencia visual del catálogo y producto](docs/phase-14-catalog-product-ux.md)
-- [Informe administrativo de ventas y ganancias](docs/phase-15-sales-reports.md)
-- [Experiencia de acciones del carrito](docs/phase-16-cart-ux.md)
+- [Domain & Pricing](docs/phase-2-domain.md)
+- [Firebase Preparation](docs/phase-3-firebase.md)
+- [Initial Administration](docs/phase-4-admin.md)
+- [Cart & Draft](docs/phase-5-cart.md)
+- [Spark Architecture](docs/phase-6-readiness.md)
+- [Orders, Reservations & Inventory](docs/phase-7-orders.md)
+- [Profile, Delivery & Hosting Preparation](docs/phase-8-profile-hosting.md)
+- [Visible Session & Admin Inventory](docs/phase-9-admin-ux.md)
+- [Navigation & Electronic Receipt](docs/phase-10-invoice-ux.md)
+- [Reported Payments & Scope Delivery](docs/phase-11-simulated-payments.md)
+- [Payment Modal & Commercial Detail](docs/phase-12-payment-modal-commercial-detail.md)
+- [Cloudinary Product Images](docs/phase-13-cloudinary-images.md)
+- [Catalog & Product UX](docs/phase-14-catalog-product-ux.md)
+- [Administrative Sales & Profit Reports](docs/phase-15-sales-reports.md)
+- [Cart Action Experience](docs/phase-16-cart-ux.md)
 
-Siguiente bloque: reemplazar los datos provisionales de empresa y tienda, integrar un proveedor de pago verificable y optimizar la carga inicial antes de publicar Hosting.
+---
+
+## Security Notes
+
+Before using the template in production:
+
+- Use a dedicated Firebase project
+- Review Firestore rules
+- Review Firestore indexes
+- Restrict administrative permissions
+- Never trust commercial totals coming from the browser
+- Never expose secrets through `VITE_*`
+- Review Cloudinary upload restrictions
+- Replace simulated payment flows with a verified provider
+- Validate production hosting configuration
+- Review customer data retention and privacy requirements
+
+---
+
+## Roadmap
+
+Potential next improvements for the template:
+
+- Replace provisional store data with configurable onboarding
+- Integrate a verified payment provider
+- Improve initial bundle loading
+- Add stronger Cloudinary upload authorization
+- Expand automated end-to-end testing
+- Improve production observability
+- Add optional deployment presets
+
+---
+
+## Using This Repository as a Template
+
+This repository is configured as a GitHub **Template Repository**.
+
+Use **Use this template** to create a new independent implementation.
+
+Each generated project should receive its own:
+
+- Firebase project
+- Environment configuration
+- Cloudinary configuration
+- Branding
+- Business rules
+- Administrative accounts
+- Production credentials
+
+Client-specific implementations are intentionally maintained separately from this public template.
+
+---
+
+## Project Purpose
+
+This repository is published as a reusable technical reference and portfolio project.
+
+It is intended for software development, learning and experimentation.
+
+It should not be treated as a turnkey academic submission or presented as original academic work without substantial independent development and attribution.
+
+---
+
+## Author
+
+**Alfredo Ramos**
+
+Software Engineer  
+Full Stack · Mobile · Backend · Data · GIS · Machine Learning
+
+GitHub: [@wolcken](https://github.com/wolcken)  
+LinkedIn: [alfredoramos-dev](https://www.linkedin.com/in/alfredoramos-dev/)
